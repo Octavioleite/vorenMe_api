@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(uuid())
+  name     String?
+  email    String   @unique
+  password String
+  active   Boolean  @default(true)
+  cards    Card[]
+  images   Image[]
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+}
+
+// O cartão inteiro vive em `config` (formato CreatorConfig do vorenMe_app,
+// validado em src/dto/card/config.js) — sem tabela por rede social/marca.
+model Card {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug     String   @unique
+  template String
+  config   Json
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Fotos enviadas pelo painel. Ficam no próprio Postgres (já reduzidas no navegador, ~100-300kb).
+// ponytail: bytes no banco e sem limpeza de órfãs; mover para S3/R2 se o volume crescer.
+model Image {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mime     String
+  data     Bytes
+  createAt DateTime @default(now())
+
+  @@index([userId])
+}

@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.env
+.git
+.github
+.agents
+.claude
+.windsurf
+*.log
+debug.log
+server.log
