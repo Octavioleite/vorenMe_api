@@ -17,6 +17,7 @@ export default {
     location: "Campinas",
     accent: "#3B82C4",
     theme: "light",
+    style: "clinica",
     availability: { open: true, label: "Horários disponíveis esta semana" },
     socials: [
       { platform: "instagram", handle: "@drrafaelsouza", url: "https://instagram.com/drrafaelsouza" },

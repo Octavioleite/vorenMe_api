@@ -17,6 +17,7 @@ export default {
     location: "São Paulo",
     accent: "#2A7A8C",
     theme: "light",
+    style: "clinica",
     availability: { open: true, label: "Agenda aberta para novos pacientes" },
     socials: [
       { platform: "instagram", handle: "@dramarinaalves", url: "https://instagram.com/dramarinaalves" },

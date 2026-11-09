@@ -17,6 +17,7 @@ export default {
     location: "São Paulo",
     accent: "#B5838D",
     theme: "light",
+    style: "atelie",
     availability: { open: true, label: "Seg a sáb, 9h às 19h" },
     socials: [
       { platform: "instagram", handle: "@atelieaurora", url: "https://instagram.com/atelieaurora" },

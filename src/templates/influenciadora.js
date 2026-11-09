@@ -17,6 +17,7 @@ export default {
     location: "Rio de Janeiro",
     accent: "#E8552B",
     theme: "dark",
+    style: "criador",
     availability: { open: true, label: "Agenda aberta para collabs" },
     socials: [
       { platform: "instagram", handle: "@seuperfil", url: "https://instagram.com/seuperfil" },

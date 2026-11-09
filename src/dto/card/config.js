@@ -1,6 +1,7 @@
 // Validação do CreatorConfig (vorenMe_app/src/config/types.ts).
 // ponytail: espelha o tipo TS à mão — se os dois começarem a divergir, extrair um schema compartilhado.
 
+const STYLES = ["criador", "forte", "tinta", "atelie", "sereno", "glam", "clinica", "leve", "simples"];
 const PLATFORMS = ["instagram", "tiktok", "youtube", "pinterest", "spotify", "x", "website"];
 const LABEL_KEYS = [
   "socials", "featured", "now", "brands", "whatsapp", "email", "saveContact", "share", "linkCopied",
@@ -55,6 +56,7 @@ export const validateCardConfig = (c) => {
   need(isText(c.niche), "niche is required");
   need(typeof c.accent === "string" && HEX.test(c.accent), "accent must be a hex color like #E8552B");
   need(c.theme === "dark" || c.theme === "light", "theme must be 'dark' or 'light'");
+  if (c.style !== undefined) need(STYLES.includes(c.style), `style must be one of: ${STYLES.join(", ")}`);
 
   need(Array.isArray(c.socials), "socials must be a list");
   (Array.isArray(c.socials) ? c.socials : []).forEach((s, i) => {

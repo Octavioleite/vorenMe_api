@@ -21,9 +21,10 @@ test("valida cor, tema, whatsapp e labels", () => {
   const c = structuredClone(templates[0].config);
   c.accent = "red";
   c.theme = "blue";
+  c.style = "neon";
   c.whatsapp.number = "+55 11 9";
   delete c.labels.share;
-  assert.equal(validateCardConfig(c).length, 4);
+  assert.equal(validateCardConfig(c).length, 5);
   assert.deepEqual(validateCardConfig(null), ["config must be an object"]);
 });
 

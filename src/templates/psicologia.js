@@ -17,6 +17,7 @@ export default {
     location: "Belo Horizonte",
     accent: "#7A8F6B",
     theme: "light",
+    style: "sereno",
     availability: { open: true, label: "Vagas para novos pacientes" },
     socials: [
       { platform: "instagram", handle: "@anaribeiro.psi", url: "https://instagram.com/anaribeiro.psi" },
