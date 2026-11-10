@@ -42,6 +42,7 @@ const safeUser = (u, now = new Date()) => ({
   status: statusOf(u, now),
   subscribed: Boolean(u.asaasSubscriptionId),
   lastSeenAt: u.lastSeenAt,
+  origin: u.origin,
 });
 
 /** Últimos 12 meses (YYYY-MM, Brasília), do mais antigo ao atual. */
@@ -116,6 +117,53 @@ export const overview = async (now = new Date()) => {
     funnel,
     activity,
     idleDays: IDLE_DAYS,
+  };
+};
+
+/** Página inicial (/) no período: visitas, cliques no CTA e cadastros, por dia, fonte, campanha e aparelho.
+ *  Cadastros contam pela origem gravada no usuário (inclui quem caiu direto no /painel, ex.: selo do cartão). */
+export const siteStats = async (query = {}) => {
+  const r = parseRange(query);
+  const ev = Prisma.sql`"createAt" >= ${r.gte} AND "createAt" < ${r.lt}`;
+  const users = Prisma.sql`"createAt" >= ${r.gte} AND "createAt" < ${r.lt} AND ${notAdmin()}`;
+  const paid = Prisma.sql`count(*) FILTER (WHERE EXISTS (SELECT 1 FROM "Payment" p WHERE p."userId" = u.id AND p.amount > 0 AND p."refundedAt" IS NULL))::int`;
+  const visits = Prisma.sql`count(*) FILTER (WHERE kind = 'view')::int AS views, count(*) FILTER (WHERE kind = 'view' AND "new")::int AS visitors,
+    count(*) FILTER (WHERE kind = 'cta')::int AS cta`;
+  const day = (col) => Prisma.sql`to_char((${Prisma.raw(col)} AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD')`;
+
+  const [evDay, userDay, evSource, userSource, evCampaign, userCampaign, devices] = await Promise.all([
+    prisma.$queryRaw`SELECT ${day('"createAt"')} AS day, ${visits} FROM "SiteEvent" WHERE ${ev} GROUP BY 1`,
+    prisma.$queryRaw`SELECT ${day('"createAt"')} AS day, count(*)::int AS signups FROM "User" WHERE ${users} GROUP BY 1`,
+    prisma.$queryRaw`SELECT source, ${visits} FROM "SiteEvent" WHERE ${ev} GROUP BY 1`,
+    prisma.$queryRaw`SELECT coalesce(origin->>'source', 'desconhecido') AS source, count(*)::int AS signups, ${paid} AS paid FROM "User" u WHERE ${users} GROUP BY 1`,
+    prisma.$queryRaw`SELECT source, campaign, ${visits} FROM "SiteEvent" WHERE ${ev} AND campaign IS NOT NULL GROUP BY 1, 2`,
+    prisma.$queryRaw`SELECT origin->>'source' AS source, origin->>'campaign' AS campaign, count(*)::int AS signups, ${paid} AS paid
+      FROM "User" u WHERE ${users} AND origin->>'campaign' IS NOT NULL GROUP BY 1, 2`,
+    prisma.$queryRaw`SELECT device, count(*)::int AS views FROM "SiteEvent" WHERE ${ev} AND kind = 'view' GROUP BY 1`,
+  ]);
+
+  // Junta as linhas de eventos e de cadastros pela mesma chave, com zeros onde faltar.
+  const zero = { views: 0, visitors: 0, cta: 0, signups: 0, paid: 0 };
+  const merge = (keyOf, ...lists) => {
+    const m = new Map();
+    for (const row of lists.flat()) m.set(keyOf(row), { ...zero, ...m.get(keyOf(row)), ...row });
+    return [...m.values()].sort((a, b) => b.visitors + b.signups - (a.visitors + a.signups));
+  };
+  const days = new Map(merge((x) => x.day, evDay, userDay).map((x) => [x.day, x]));
+  const byDay = Array.from({ length: r.days }, (_, i) => {
+    const d = ymd(new Date(r.gte.getTime() + i * DAY + TZ_SHIFT));
+    return { ...zero, ...days.get(d), day: d };
+  });
+  const sum = (k) => byDay.reduce((a, x) => a + x[k], 0);
+  return {
+    from: r.from,
+    to: r.to,
+    days: r.days,
+    totals: { views: sum("views"), visitors: sum("visitors"), cta: sum("cta"), signups: sum("signups"), paid: userSource.reduce((a, x) => a + x.paid, 0) },
+    byDay,
+    bySource: merge((x) => x.source, evSource, userSource),
+    byCampaign: merge((x) => `${x.source}|${x.campaign}`, evCampaign, userCampaign),
+    byDevice: devices.sort((a, b) => b.views - a.views),
   };
 };
 
@@ -322,8 +370,8 @@ export const exportCsv = async (kind) => {
   if (kind === "usuarios") {
     const users = await prisma.user.findMany({ where: { email: { notIn: admins(), mode: "insensitive" } }, orderBy: { createAt: "asc" }, include: { _count: { select: { cards: true } } } });
     return { filename: `usuarios-${ymd(now)}.csv`, csv: toCsv(
-      ["id", "nome", "email", "cadastro", "status", "valido_ate", "email_confirmado", "assinatura_asaas", "ultimo_acesso", "cartoes"],
-      users.map((u) => [u.id, u.name, u.email, u.createAt, statusOf(u, now), activeUntil(u), u.emailVerifiedAt ? "sim" : "nao", u.asaasSubscriptionId ? "sim" : "nao", u.lastSeenAt, u._count.cards])) };
+      ["id", "nome", "email", "cadastro", "status", "valido_ate", "email_confirmado", "assinatura_asaas", "ultimo_acesso", "cartoes", "origem_fonte", "origem_midia", "origem_campanha"],
+      users.map((u) => [u.id, u.name, u.email, u.createAt, statusOf(u, now), activeUntil(u), u.emailVerifiedAt ? "sim" : "nao", u.asaasSubscriptionId ? "sim" : "nao", u.lastSeenAt, u._count.cards, u.origin?.source, u.origin?.medium, u.origin?.campaign])) };
   }
   if (kind === "pagamentos") {
     const payments = await prisma.payment.findMany({ orderBy: { createAt: "asc" }, include: { user: { select: { name: true, email: true } } } });

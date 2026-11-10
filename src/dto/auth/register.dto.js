@@ -1,3 +1,5 @@
+import { cleanOrigin } from "../../utils/origin.js";
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default class RegisterUserDto {
@@ -5,6 +7,7 @@ export default class RegisterUserDto {
     this.name = typeof data.name === "string" ? data.name.trim() : undefined;
     this.email = typeof data.email === "string" ? data.email.trim().toLowerCase() : data.email;
     this.password = data.password;
+    this.origin = cleanOrigin(data.origin);
     this.ref = typeof data.ref === "string" ? data.ref.slice(0, 40) : undefined;
   }
 

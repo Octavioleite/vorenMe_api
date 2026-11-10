@@ -37,6 +37,7 @@ export const register = async (dto) => {
     email: dto.email,
     password: await hashPassword(dto.password),
     referredById: ref?.userId ?? null,
+    origin: dto.origin ?? undefined,
     lastSeenAt: new Date(),
     ...verify.data,
   });

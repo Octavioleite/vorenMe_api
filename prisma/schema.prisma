@@ -33,6 +33,8 @@ model User {
   tokenVersion     Int      @default(0)
   // Último login ou refresh de token (o painel renova a cada ~3h de uso).
   lastSeenAt       DateTime?
+  // De onde a pessoa veio ao se cadastrar: { source, medium, campaign, content, term, ref, page } (src/utils/origin.js).
+  origin           Json?
   cards    Card[]
   images   Image[]
   emails   EmailLog[]
@@ -81,6 +83,22 @@ model Event {
   createAt DateTime @default(now())
 
   @@index([cardId, createAt])
+}
+
+// Estatísticas da página inicial (/): uma linha por visita (view) ou clique no "Testar grátis" (cta).
+// `new` = primeira visita daquele navegador (conta visitantes sem cookie). Sem IP nem dado pessoal.
+// ponytail: visitas do próprio admin também contam; filtrar se distorcer os números.
+model SiteEvent {
+  id       Int      @id @default(autoincrement())
+  kind     String   // view | cta
+  source   String
+  medium   String?
+  campaign String?
+  device   String   // mobile | desktop
+  new      Boolean  @default(false)
+  createAt DateTime @default(now())
+
+  @@index([createAt])
 }
 
 // Fotos enviadas pelo painel. Ficam no próprio Postgres (já reduzidas no navegador, ~100-300kb).

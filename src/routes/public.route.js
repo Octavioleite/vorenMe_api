@@ -2,6 +2,8 @@ import { Router, text } from "express";
 import rateLimit from "express-rate-limit";
 import * as publicController from "../controller/public.controller.js";
 import * as statsService from "../service/stats.service.js";
+import { normalizeSite } from "../utils/origin.js";
+import prisma from "../lib/prisma.js";
 
 const router = Router();
 
@@ -19,6 +21,17 @@ router.post("/cards/:slug/events", eventLimiter, text({ type: "*/*", limit: "2kb
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
     await statsService.record(req.params.slug, body);
+  } catch {
+    /* evento inválido: ignora */
+  }
+  return res.status(204).end();
+});
+
+// Página inicial (/): visitas e cliques no "Testar grátis", com a origem (utm/referrer). Mesmo esquema dos cartões.
+router.post("/site/events", eventLimiter, text({ type: "*/*", limit: "2kb" }), async (req, res) => {
+  try {
+    const event = normalizeSite(typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body, req.get("user-agent"));
+    if (event) await prisma.siteEvent.create({ data: event });
   } catch {
     /* evento inválido: ignora */
   }
