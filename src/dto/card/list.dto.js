@@ -6,5 +6,6 @@ export default class ListCardDto {
     this.config = data.config;
     this.createAt = data.createAt;
     this.updateAt = data.updateAt;
+    this.disabled = Boolean(data.disabledAt); // tirado do ar pela moderação
   }
 }

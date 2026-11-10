@@ -82,6 +82,22 @@ export const validateCardConfig = (c) => {
       need(isText(k?.brand) && isText(k?.code) && k.code.length <= 40, `coupons[${i}] needs brand and code (max 40 chars)`));
   }
 
+  // Pix: limites do BR Code (padrão do Banco Central): nome até 25, cidade até 15, chave até 77.
+  if (c.pix !== undefined) {
+    need(isText(c.pix?.key) && c.pix.key.length <= 77, "pix.key is required (max 77 chars)");
+    need(isText(c.pix?.name) && c.pix.name.length <= 25, "pix.name is required (max 25 chars)");
+    need(isText(c.pix?.city) && c.pix.city.length <= 15, "pix.city is required (max 15 chars)");
+  }
+  if (c.address !== undefined) {
+    need(isText(c.address?.text) && c.address.text.length <= 200, "address.text is required (max 200 chars)");
+    const hours = c.address?.hours;
+    if (hours !== undefined) {
+      need(Array.isArray(hours) && hours.length <= 7, "address.hours must be a list (max 7)");
+      (Array.isArray(hours) ? hours : []).forEach((h, i) => need(isText(h?.days) && isText(h?.time), `address.hours[${i}] needs days and time`));
+    }
+  }
+  if (c.review !== undefined) need(isText(c.review?.url), "review.url is required");
+
   need(isText(c.partnership?.title) && isText(c.partnership?.text), "partnership.title and partnership.text are required");
   need(typeof c.footer?.showVoren === "boolean", "footer.showVoren is required");
   need(isText(c.seo?.title) && isText(c.seo?.description) && isText(c.seo?.locale), "seo.title, seo.description and seo.locale are required");

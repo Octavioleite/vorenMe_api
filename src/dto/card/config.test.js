@@ -45,3 +45,15 @@ test("cupons: aceita válidos, recusa sem código ou com link inseguro", () => {
   assert.ok(errors.some((e) => e.includes("coupons[0] needs")));
   assert.ok(errors.some((e) => e.includes("coupons[0].url")));
 });
+
+test("pix, endereço e avaliação", () => {
+  const c = structuredClone(templates[0].config);
+  c.pix = { key: "a@b.com", name: "Ana", city: "São Paulo" };
+  c.address = { text: "Rua A, 1", hours: [{ days: "Seg–Sex", time: "9h–18h" }] };
+  c.review = { url: "https://g.page/r/abc/review" };
+  assert.deepEqual(validateCardConfig(c), []);
+  c.pix.city = "Cidade com nome grande demais";
+  c.review.url = "javascript:alert(1)";
+  c.address.hours = [{ days: "" }];
+  assert.equal(validateCardConfig(c).length, 3);
+});

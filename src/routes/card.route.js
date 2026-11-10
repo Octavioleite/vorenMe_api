@@ -8,5 +8,6 @@ router.get("/", appTokenMiddleware, cardController.getCards);
 router.post("/", appTokenMiddleware, cardController.registerCard);
 router.put("/:id", appTokenMiddleware, cardController.updateCardById);
 router.delete("/:id", appTokenMiddleware, cardController.deleteCardById);
+router.get("/:id/stats", appTokenMiddleware, cardController.getCardStats);
 
 export default router;

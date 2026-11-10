@@ -6,3 +6,12 @@ export const sendError = (res, error, context) => {
   console.error(`Error ${context}:`, error);
   return res.status(500).json({ message: "Internal server error" });
 };
+
+// Rota que só devolve o resultado do service: { message: "ok", data }.
+export const handle = (context, fn) => async (req, res) => {
+  try {
+    return res.status(200).json({ message: "ok", data: (await fn(req)) ?? null });
+  } catch (error) {
+    return sendError(res, error, context);
+  }
+};

@@ -28,3 +28,6 @@ dist-ssr
 *.sw?
 /src/generated/prisma
 /src/generated/prisma
+
+# Composes/notas do deploy da VPS: ficam só na máquina, fora do git
+deploy/

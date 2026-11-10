@@ -5,6 +5,7 @@ export default class RegisterUserDto {
     this.name = typeof data.name === "string" ? data.name.trim() : undefined;
     this.email = typeof data.email === "string" ? data.email.trim().toLowerCase() : data.email;
     this.password = data.password;
+    this.ref = typeof data.ref === "string" ? data.ref.slice(0, 40) : undefined;
   }
 
   validate() {

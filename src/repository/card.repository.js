@@ -13,7 +13,11 @@ export const findById = async (id) => {
 };
 
 export const findBySlug = async (slug) => {
-  return await prisma.card.findUnique({ where: { slug } });
+  return await prisma.card.findUnique({ where: { slug }, include: { user: { select: { createAt: true, paidUntil: true, active: true } } } });
+};
+
+export const countByUser = async (userId) => {
+  return await prisma.card.count({ where: { userId } });
 };
 
 export const saveCard = async (id, data) => {

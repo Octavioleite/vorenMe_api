@@ -13,14 +13,45 @@ model User {
   email    String   @unique
   password String
   active   Boolean  @default(true)
+  // Assinatura paga até esta data (trial = createAt + 3 dias). Ver src/utils/plan.js.
+  paidUntil DateTime?
+  asaasCustomerId     String? @unique
+  asaasSubscriptionId String?
+  // Indicação: quem trouxe esta pessoa; recompensa paga uma vez, no 1º pagamento dela.
+  referredById     String?
+  referralRewarded Boolean @default(false)
+  // Meses grátis ganhos por indicação, ainda não usados (abatem a próxima fatura do Asaas).
+  freeMonths       Int     @default(0)
+  // Recuperação de senha: só o hash do token (o token vai no e-mail).
+  resetTokenHash   String? @unique
+  resetTokenExp    DateTime?
+  // Verificação de e-mail: só o hash do token (o token vai no link do e-mail).
+  emailVerifiedAt  DateTime?
+  verifyTokenHash  String?  @unique
+  verifyTokenExp   DateTime?
+  // Sobe a cada troca/reset de senha: refresh tokens com versão antiga param de valer.
+  tokenVersion     Int      @default(0)
+  // Último login ou refresh de token (o painel renova a cada ~3h de uso).
+  lastSeenAt       DateTime?
   cards    Card[]
   images   Image[]
+  emails   EmailLog[]
+  payments Payment[]
+  supportSessions SupportSession[]
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 }
 
 // O cartão inteiro vive em `config` (formato CreatorConfig do vorenMe_app,
 // validado em src/dto/card/config.js) — sem tabela por rede social/marca.
+// Slug liberado (cartão excluído ou renomeado) fica preso ao antigo dono por um tempo:
+// impede trocar de conta e reaproveitar o mesmo QR impresso. Sem FK: sobrevive à exclusão da conta.
+model SlugHold {
+  slug   String   @id
+  userId String
+  until  DateTime
+}
+
 model Card {
   id       String   @id @default(uuid())
   userId   String
@@ -28,10 +59,28 @@ model Card {
   slug     String   @unique
   template String
   config   Json
+  events   Event[]
+  // Tirado do ar pela moderação do admin (independe da assinatura).
+  disabledAt     DateTime?
+  disabledReason String?
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Estatísticas: uma linha por visita ou clique na página pública.
+// ponytail: linha por evento; agregar por dia numa tabela de resumo se passar de alguns milhões de linhas.
+model Event {
+  id       Int      @id @default(autoincrement())
+  cardId   String
+  card     Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  kind     String   // view | click
+  target   String?  // whatsapp, instagram, pix, maps... (só em click)
+  source   String   // instagram, tiktok, qr, whatsapp, google, direto...
+  createAt DateTime @default(now())
+
+  @@index([cardId, createAt])
 }
 
 // Fotos enviadas pelo painel. Ficam no próprio Postgres (já reduzidas no navegador, ~100-300kb).
@@ -43,6 +92,68 @@ model Image {
   mime     String
   data     Bytes
   createAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// E-mails já enviados. A chave única impede mandar o mesmo lembrete duas vezes
+// (ex.: "trial-ending:2026-11-12"), mesmo com a rotina rodando em mais de um servidor.
+model EmailLog {
+  id       Int      @id @default(autoincrement())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key      String
+  createAt DateTime @default(now())
+
+  @@unique([userId, key])
+}
+
+// Histórico de cobranças: Asaas (webhook) e lançadas no admin (pagou direto, cortesia).
+// O acesso continua vindo só de User.paidUntil; esta tabela é histórico + receita.
+model Payment {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Decimal   @db.Decimal(10, 2) // 0 = cortesia
+  method        String    // asaas | pix | dinheiro | transferencia | cortesia
+  asaasId       String?   @unique // null = lançado no admin
+  until         DateTime  // paidUntil que este pagamento liberou
+  prevPaidUntil DateTime? // para desfazer um lançamento manual
+  note          String?
+  createdBy     String?   // e-mail do admin
+  refundedAt    DateTime?
+  createAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createAt])
+}
+
+// Linha do tempo: ações do admin (auditoria) e eventos de conta, como cancelamento de assinatura.
+// Sem FK: o registro sobrevive à exclusão da conta (cancelamentos continuam contando no histórico).
+model Activity {
+  id       Int      @id @default(autoincrement())
+  userId   String?  // conta afetada
+  actor    String   // e-mail do admin, ou "usuario"
+  action   String   // subscription.cancel | payment.add | payment.undo | payment.link | user.active | user.verify | card.disable
+  data     Json?
+  createAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action, createAt])
+}
+
+// Acesso do suporte à conta do cliente. O token de suporte carrega o id desta linha e só vale
+// enquanto ela estiver aberta: o cliente (ou o admin) encerra e o acesso cai na hora.
+model SupportSession {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminEmail String
+  adminName  String?
+  startedAt  DateTime  @default(now())
+  expiresAt  DateTime
+  endedAt    DateTime?
+  endedBy    String?   // e-mail do admin, ou "usuario"
 
   @@index([userId])
 }

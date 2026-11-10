@@ -2,6 +2,7 @@ import RegisterCardDto from "../dto/card/register.dto.js";
 import UpdateCardDto from "../dto/card/update.dto.js";
 import * as cardService from "../service/card.service.js";
 import { sendError } from "../utils/sendError.js";
+import * as statsService from "../service/stats.service.js";
 
 export const getCards = async (req, res) => {
   try {
@@ -56,5 +57,13 @@ export const deleteCardById = async (req, res) => {
     return res.status(200).json({ message: "Card deleted successfully" });
   } catch (error) {
     return sendError(res, error, "deleting card");
+  }
+};
+
+export const getCardStats = async (req, res) => {
+  try {
+    return res.status(200).json({ message: "Stats retrieved", data: await statsService.summary(req.user.id, req.params.id, req.query) });
+  } catch (error) {
+    return sendError(res, error, "card stats");
   }
 };
