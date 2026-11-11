@@ -9,7 +9,7 @@ export const register = async (req, res) => {
     const errors = dto.validate();
 
     if (errors.length > 0) {
-      return res.status(400).json({ message: "Validation error", errors });
+      return res.status(400).json({ message: "Confira os campos.", errors });
     }
 
     return res.status(201).json({
@@ -27,7 +27,7 @@ export const login = async (req, res) => {
     const errors = dto.validate();
 
     if (errors.length > 0) {
-      return res.status(400).json({ message: "Validation error", errors });
+      return res.status(400).json({ message: "Confira os campos.", errors });
     }
 
     return res.status(200).json({

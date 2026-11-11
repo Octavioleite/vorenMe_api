@@ -8,11 +8,11 @@ export default class LoginUserDto {
     const errors = [];
 
     if (!this.email) {
-      errors.push("Email is required");
+      errors.push("Informe o e-mail.");
     }
 
     if (!this.password) {
-      errors.push("Password is required");
+      errors.push("Informe a senha.");
     }
 
     return errors;

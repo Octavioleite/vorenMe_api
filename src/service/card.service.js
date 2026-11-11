@@ -24,20 +24,20 @@ export const assertActive = async (userId) => {
 // Cartão de outro usuário responde 404, igual a um inexistente.
 const findOwned = async (userId, id) => {
   const card = await cardRepository.findById(id);
-  if (!card || card.userId !== userId) throw httpError(404, "Card not found");
+  if (!card || card.userId !== userId) throw httpError(404, "Cartão não encontrado.");
   return card;
 };
 
 const assertSlugFree = async (userId, slug, exceptId) => {
   const other = await cardRepository.findBySlug(slug);
-  if (other && other.id !== exceptId) throw httpError(409, "Slug already in use");
+  if (other && other.id !== exceptId) throw httpError(409, "Esse endereço já está em uso. Escolha outro.");
   const hold = await prisma.slugHold.findUnique({ where: { slug } });
-  if (hold && hold.userId !== userId && hold.until > new Date()) throw httpError(409, "Slug already in use");
+  if (hold && hold.userId !== userId && hold.until > new Date()) throw httpError(409, "Esse endereço já está em uso. Escolha outro.");
 };
 
 // A unique do banco cobre a corrida entre a checagem e o insert.
 const uniqueSlug = (error) => {
-  if (error?.code === "P2002") throw httpError(409, "Slug already in use");
+  if (error?.code === "P2002") throw httpError(409, "Esse endereço já está em uso. Escolha outro.");
   throw error;
 };
 
@@ -48,7 +48,7 @@ export const list = async (userId) => {
 
 export const register = async (userId, dto) => {
   const template = templateService.findById(dto.template);
-  if (!template) throw httpError(400, "Template not found");
+  if (!template) throw httpError(400, "Modelo não encontrado.");
 
   const user = await assertActive(userId);
   // Sem verificação, dava para girar contas novas e emendar trials de 3 dias para sempre.
@@ -94,7 +94,7 @@ export const remove = async (userId, id) => {
 
 export const getPublicBySlug = async (slug) => {
   const card = await cardRepository.findBySlug(String(slug).toLowerCase());
-  if (!card) throw httpError(404, "Card not found");
-  if (card.disabledAt || !isOnline(card.user)) throw httpError(410, "Card unavailable");
+  if (!card) throw httpError(404, "Cartão não encontrado.");
+  if (card.disabledAt || !isOnline(card.user)) throw httpError(410, "Cartão indisponível.");
   return isActive(card.user) ? card.config : basicConfig(card.config);
 };

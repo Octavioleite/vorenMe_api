@@ -4,7 +4,7 @@ export const sendError = (res, error, context) => {
     return res.status(error.status).json({ message: error.message });
   }
   console.error(`Error ${context}:`, error);
-  return res.status(500).json({ message: "Internal server error" });
+  return res.status(500).json({ message: "Algo deu errado. Tente novamente." });
 };
 
 // Rota que só devolve o resultado do service: { message: "ok", data }.

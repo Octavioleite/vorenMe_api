@@ -27,7 +27,7 @@ const ymd = (d) => new Date(d.getTime() - 3 * 3600 * 1000).toISOString().slice(0
 
 const findUser = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw httpError(404, "User not found");
+  if (!user) throw httpError(404, "Usuário não encontrado.");
   return user;
 };
 

@@ -43,7 +43,7 @@ export const parseRange = ({ from, to } = {}) => {
 // Resumo de um cartão do usuário no período, com filtro opcional de origem e comparação com o período anterior.
 export const summary = async (userId, cardId, query = {}) => {
   const card = await prisma.card.findUnique({ where: { id: cardId }, select: { userId: true } });
-  if (!card || card.userId !== userId) throw httpError(404, "Card not found");
+  if (!card || card.userId !== userId) throw httpError(404, "Cartão não encontrado.");
 
   const r = parseRange(query);
   const source = SOURCES.includes(query.source) ? query.source : null;

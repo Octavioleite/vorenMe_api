@@ -25,7 +25,7 @@ const verifyLink = (token) => `${process.env.FRONT_URL || "http://localhost:5173
 
 export const register = async (dto) => {
   if (await userRepository.findByEmail(dto.email)) {
-    throw httpError(409, "Email already registered");
+    throw httpError(409, "Este e-mail já tem conta. Entre ou recupere a senha.");
   }
 
   // Indicação: `ref` é o slug do cartão de onde a pessoa veio (selo "Feito com VorenMe").
@@ -52,7 +52,7 @@ export const login = async (dto) => {
   // Mesma mensagem e o mesmo tempo para e-mail inexistente e senha errada: não revela quem tem conta.
   const ok = await verifyPassword(dto.password, user?.password ?? DUMMY_HASH);
   if (!user || !user.active || !ok) {
-    throw httpError(401, "Email or password is incorrect");
+    throw httpError(401, "E-mail ou senha incorretos.");
   }
 
   await userRepository.updateUser(user.id, { lastSeenAt: new Date() }); // "último acesso" no admin
@@ -64,7 +64,7 @@ export const refreshToken = async (userId, version) => {
   const user = await userRepository.findById(userId);
 
   if (!user || !user.active || (user.tokenVersion ?? 0) !== (version ?? 0)) {
-    throw httpError(401, "User not found");
+    throw httpError(401, "Usuário não encontrado.");
   }
 
   await userRepository.updateUser(user.id, { lastSeenAt: new Date() });
@@ -78,7 +78,7 @@ const checkPassword = async (user, password) => {
 // Perfil: nome e/ou senha (a senha nova exige a atual). E-mail fica fixo até existir verificação por e-mail.
 export const updateMe = async (userId, { name, currentPassword, newPassword }) => {
   const user = await userRepository.findById(userId);
-  if (!user) throw httpError(404, "User not found");
+  if (!user) throw httpError(404, "Usuário não encontrado.");
 
   const data = {};
   if (typeof name === "string") data.name = name.trim().slice(0, 80) || null;
@@ -101,7 +101,7 @@ export const updateMe = async (userId, { name, currentPassword, newPassword }) =
 // Exclui conta, cartões e fotos (cascade). Cancela a assinatura no Asaas antes, para não seguir cobrando.
 export const deleteMe = async (userId, password) => {
   const user = await userRepository.findById(userId);
-  if (!user) throw httpError(404, "User not found");
+  if (!user) throw httpError(404, "Usuário não encontrado.");
   await checkPassword(user, password);
   await billingService.cancel(userId, { silent: true, reason: "conta excluída" });
   const cards = await prisma.card.findMany({ where: { userId }, select: { slug: true } });
@@ -150,7 +150,7 @@ export const verifyEmail = async (token) => {
 
 export const resendVerification = async (userId) => {
   const user = await userRepository.findById(userId);
-  if (!user) throw httpError(404, "User not found");
+  if (!user) throw httpError(404, "Usuário não encontrado.");
   if (user.emailVerifiedAt) return;
   const verify = newVerifyToken();
   await userRepository.updateUser(user.id, verify.data);

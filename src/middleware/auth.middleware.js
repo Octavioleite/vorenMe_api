@@ -5,7 +5,7 @@ export const appTokenMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
   }
 
   let decoded;
@@ -13,24 +13,24 @@ export const appTokenMiddleware = async (req, res, next) => {
     decoded = verifyToken(token);
   } catch (error) {
     console.error("Token verification error:", error.message);
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
   }
   // Confere a conta a cada request: desativar, trocar ou redefinir a senha (tokenVersion++) derruba
   // na hora os tokens já emitidos, em vez de esperar o JWT expirar.
   try {
     const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { active: true, tokenVersion: true } });
-    if (!user?.active || (user.tokenVersion ?? 0) !== (decoded.v ?? 0)) return res.status(401).json({ message: "Unauthorized" });
+    if (!user?.active || (user.tokenVersion ?? 0) !== (decoded.v ?? 0)) return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
     // Token de suporte: só vale com a sessão aberta (o cliente pode encerrar a qualquer momento)
     // e enquanto quem abriu continuar admin (removido do ADMIN_EMAILS ou desativado = acesso cai).
     if (decoded.imp) {
       const s = await prisma.supportSession.findUnique({ where: { id: decoded.imp } });
-      if (!s || s.endedAt || s.expiresAt <= new Date() || s.userId !== decoded.id) return res.status(401).json({ message: "Unauthorized" });
+      if (!s || s.endedAt || s.expiresAt <= new Date() || s.userId !== decoded.id) return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
       const admin = admins().includes(s.adminEmail.toLowerCase()) && (await prisma.user.findUnique({ where: { email: s.adminEmail }, select: { active: true } }));
-      if (!admin?.active) return res.status(401).json({ message: "Unauthorized" });
+      if (!admin?.active) return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
     }
   } catch (error) {
     console.error("Token account check error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Algo deu errado. Tente novamente." });
   }
   req.user = decoded;
   next();
@@ -44,7 +44,7 @@ export const refreshTokenMiddleware = (req, res, next) => {
   const refreshToken = req.headers["x-refresh-token"];
 
   if (!refreshToken) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
   }
 
   try {
@@ -53,7 +53,7 @@ export const refreshTokenMiddleware = (req, res, next) => {
     next();
   } catch (error) {
     console.error("Refresh token verification error:", error.message);
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Sessão expirada. Entre novamente." });
   }
 };
 
@@ -62,14 +62,14 @@ export const refreshTokenMiddleware = (req, res, next) => {
 export const admins = () => (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 export const adminMiddleware = [appTokenMiddleware, async (req, res, next) => {
   try {
-    if (req.user.imp) return res.status(403).json({ message: "Forbidden" });
+    if (req.user.imp) return res.status(403).json({ message: "Acesso negado." });
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     const ok = user?.active && user.emailVerifiedAt && (user.tokenVersion ?? 0) === (req.user.v ?? 0) && admins().includes(user.email.toLowerCase());
-    if (!ok) return res.status(403).json({ message: "Forbidden" });
+    if (!ok) return res.status(403).json({ message: "Acesso negado." });
     req.admin = user;
     next();
   } catch (error) {
     console.error("Admin check error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Algo deu errado. Tente novamente." });
   }
 }];

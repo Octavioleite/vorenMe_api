@@ -2,7 +2,7 @@ import { baseFooter, baseLabels, unsplash } from "./base.js";
 
 export default {
   id: "clinica-medica",
-  name: "Clínica médica",
+  name: "Médicos e saúde",
   category: "Saúde",
   config: {
     name: { first: "Dra. Marina", last: "Alves" },
@@ -12,8 +12,8 @@ export default {
       alt: "Dra. Marina Alves de jaleco no consultório",
       focal: "50% 25%",
     },
-    bio: "Cuidado próximo e sem pressa, com foco em prevenção e acompanhamento de longo prazo.",
-    niche: "Clínica geral · CRM-SP 000000",
+    bio: "Atendimento próximo e sem pressa, com foco em prevenção e acompanhamento de longo prazo.",
+    niche: "Sua especialidade · CRM/CRO/CRP 000000",
     location: "São Paulo",
     accent: "#2A7A8C",
     theme: "light",
@@ -21,7 +21,7 @@ export default {
     availability: { open: true, label: "Agenda aberta para novos pacientes" },
     socials: [
       { platform: "instagram", handle: "@dramarinaalves", url: "https://instagram.com/dramarinaalves" },
-      { platform: "website", label: "Site da clínica", handle: "clinica.com.br", url: "https://example.com" },
+      { platform: "website", label: "Site do consultório", handle: "consultorio.com.br", url: "https://example.com" },
     ],
     whatsapp: {
       number: "5511900000000",
@@ -31,19 +31,19 @@ export default {
     email: { address: "contato@example.com", subject: "Agendamento de consulta" },
     partnership: {
       title: "Agende sua consulta.",
-      text: "Atendimento presencial e por telemedicina. Fale com a recepção pelo WhatsApp para ver os horários.",
-      formats: ["Presencial", "Telemedicina", "Check-up"],
+      text: "Atendimento presencial e online. Fale pelo WhatsApp para ver os horários disponíveis.",
+      formats: ["Presencial", "Online", "Retorno"],
     },
     now: {
       title: "Especialidades",
-      text: "Atendimento de adultos e idosos, com foco em prevenção.",
-      interests: ["Check-up", "Hipertensão", "Diabetes", "Saúde do idoso"],
+      text: "Troque pelas áreas que você atende: médico, dentista, fisioterapeuta, psicólogo e outros.",
+      interests: ["Consultas", "Prevenção", "Acompanhamento", "Avaliação"],
     },
     brands: [],
     footer: baseFooter,
     seo: {
-      title: "Dra. Marina Alves | Clínica geral",
-      description: "Clínica geral em São Paulo. Agende sua consulta presencial ou por telemedicina.",
+      title: "Dra. Marina Alves | Profissional de saúde",
+      description: "Atendimento em saúde em São Paulo. Agende sua consulta presencial ou online.",
       locale: "pt_BR",
     },
     labels: { ...baseLabels, now: "Especialidades", brands: "Convênios" },

@@ -16,7 +16,7 @@ router.get("/page/:slug", publicController.getPublicPage);
 
 // Estatísticas. O front manda via sendBeacon com text/plain (não dispara preflight de CORS e sobrevive à navegação).
 // ponytail: sem deduplicar visitas repetidas da mesma pessoa; contar "visitantes únicos" com hash de IP+dia se pedirem.
-const eventLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, message: { message: "Too many events" } });
+const eventLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, message: { message: "Muitas requisições." } });
 router.post("/cards/:slug/events", eventLimiter, text({ type: "*/*", limit: "2kb" }), async (req, res) => {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;

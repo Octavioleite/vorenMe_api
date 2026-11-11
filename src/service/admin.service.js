@@ -321,7 +321,7 @@ export const setEmailVerified = async (admin, userId, verified) => {
 // Estatísticas de qualquer cartão: o mesmo resumo que o dono vê no painel.
 const findCard = async (cardId) => {
   const card = await prisma.card.findUnique({ where: { id: String(cardId) } });
-  if (!card) throw httpError(404, "Card not found");
+  if (!card) throw httpError(404, "Cartão não encontrado.");
   return card;
 };
 export const card = findCard;

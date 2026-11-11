@@ -10,7 +10,7 @@ export default class RegisterCardDto {
     const errors = validateSlug(this.slug);
 
     if (!this.template) {
-      errors.push("Template is required");
+      errors.push("Escolha um modelo.");
     }
 
     return errors;

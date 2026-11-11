@@ -3,7 +3,7 @@ import { baseFooter, baseLabels, unsplash } from "./base.js";
 export default {
   id: "personal-trainer",
   name: "Personal trainer",
-  category: "Saúde",
+  category: "Esporte",
   config: {
     name: { first: "Diego", last: "Alves" },
     username: "diegoalves.personal",

@@ -25,7 +25,7 @@ test("valida cor, tema, whatsapp e labels", () => {
   c.whatsapp.number = "+55 11 9";
   delete c.labels.share;
   assert.equal(validateCardConfig(c).length, 5);
-  assert.deepEqual(validateCardConfig(null), ["config must be an object"]);
+  assert.deepEqual(validateCardConfig(null), ["Dados do cartão inválidos."]);
 });
 
 test("slug", () => {
@@ -42,7 +42,7 @@ test("cupons: aceita válidos, recusa sem código ou com link inseguro", () => {
   assert.deepEqual(validateCardConfig(c), []);
   c.coupons = [{ brand: "Marca", code: "" , url: "javascript:x" }];
   const errors = validateCardConfig(c);
-  assert.ok(errors.some((e) => e.includes("coupons[0] needs")));
+  assert.ok(errors.some((e) => e.includes("Cupom 1")));
   assert.ok(errors.some((e) => e.includes("coupons[0].url")));
 });
 
@@ -56,4 +56,12 @@ test("pix, endereço e avaliação", () => {
   c.review.url = "javascript:alert(1)";
   c.address.hours = [{ days: "" }];
   assert.equal(validateCardConfig(c).length, 3);
+});
+
+test("sobrenome é opcional; nome não", () => {
+  const c = structuredClone(templates[0].config);
+  c.name.last = "";
+  assert.deepEqual(validateCardConfig(c), []);
+  c.name.first = " ";
+  assert.deepEqual(validateCardConfig(c), ["Informe o nome."]);
 });
