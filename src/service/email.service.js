@@ -125,6 +125,18 @@ export const templates = {
     }),
   }),
 
+  // Sem nome/telefone/e-mail do visitante no corpo: o contato fica só no painel (LGPD, necessidade).
+  newLead: (u, { cardId, slug, label }) => ({
+    subject: "Novo contato pelo seu cartão",
+    ...layout({
+      title: "Você recebeu um novo contato",
+      preview: `Alguém deixou o contato pelo cartão /${slug}.`,
+      lines: [hi(u), `Alguém preencheu o formulário${label ? ` "${label}"` : ""} do seu cartão /${slug}. Responda rápido: quem acabou de pedir contato está esperando.`],
+      cta: { label: "Ver o contato", url: `${front()}/painel/estatisticas/${cardId}` },
+      footnote: "Os dados da pessoa ficam só no painel do VorenMe. Use-os apenas para responder a esse contato.",
+    }),
+  }),
+
   accountDeleted: (u) => ({
     subject: "Sua conta foi excluída",
     ...layout({

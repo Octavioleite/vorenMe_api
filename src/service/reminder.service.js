@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { activeUntil, offlineAt } from "../utils/plan.js";
 import { notifyOnce } from "./email.service.js";
+import { pruneOld } from "./conecta.service.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -44,7 +45,10 @@ export const runReminders = async (now = new Date()) => {
 // ponytail: setInterval no próprio processo da API; trocar por cron externo se a API rodar em serverless.
 // Mais de uma instância rodando ao mesmo tempo não duplica: a chave única do EmailLog segura.
 export const startReminders = () => {
-  const tick = () => runReminders().catch((e) => console.error("Error running reminders:", e));
+  const tick = () => {
+    runReminders().catch((e) => console.error("Error running reminders:", e));
+    pruneOld().catch((e) => console.error("Error pruning old events:", e));
+  };
   setTimeout(tick, 30 * 1000);
   setInterval(tick, HOUR);
 };

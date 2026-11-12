@@ -62,6 +62,8 @@ model Card {
   template String
   config   Json
   events   Event[]
+  leads       Lead[]
+  conversions Conversion[]
   // Tirado do ar pela moderação do admin (independe da assinatura).
   disabledAt     DateTime?
   disabledReason String?
@@ -77,12 +79,50 @@ model Event {
   id       Int      @id @default(autoincrement())
   cardId   String
   card     Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  kind     String   // view | click
-  target   String?  // whatsapp, instagram, pix, maps... (só em click)
+  kind     String   // view | click | section
+  target   String?  // whatsapp, instagram, pix, maps... (click) · conecta (section)
   source   String   // instagram, tiktok, qr, whatsapp, google, direto...
+  // Conecta. visitor = hash de IP+navegador+cartão+dia com segredo do servidor: conta a mesma pessoa uma vez
+  // por dia sem cookie, e no dia seguinte vira outro valor (não dá para seguir ninguém entre dias).
+  visitor  String?
+  action   String?  // id da ação do Conecta (click)
+  interest String?  // id do serviço do Conecta (click)
+  shown    String[] @default([]) // ids das ações que estavam no cartão (view): base da taxa de clique
   createAt DateTime @default(now())
 
   @@index([cardId, createAt])
+}
+
+// Conecta: contato deixado pelo visitante no formulário (com consentimento). Só o dono do cartão vê.
+// Sem IP nem navegador. Apagado pelo dono ou após 12 meses (src/service/conecta.service.js, pruneOld).
+model Lead {
+  id        String   @id @default(uuid())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  action    String?  // ação do Conecta que abriu o formulário
+  interest  String?  // serviço escolhido, se veio de um
+  name      String
+  contact   String   // telefone (só números) ou e-mail
+  message   String?
+  consentAt DateTime
+  createAt  DateTime @default(now())
+
+  @@index([cardId, createAt])
+}
+
+// Conecta: venda/fechamento registrado à mão pelo dono. É a única fonte de "conversão": clique não conta.
+model Conversion {
+  id         String   @id @default(uuid())
+  cardId     String
+  card       Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  action     String?  // ação do Conecta que originou, se o dono souber
+  leadId     String?  // contato do formulário que virou cliente (sem FK: excluir o contato não apaga a venda)
+  note       String?
+  value      Decimal? @db.Decimal(10, 2)
+  occurredAt DateTime // dia da conversão (fim do dia em Brasília)
+  createAt   DateTime @default(now())
+
+  @@index([cardId, occurredAt])
 }
 
 // Estatísticas da página inicial (/): uma linha por visita (view) ou clique no "Testar grátis" (cta).

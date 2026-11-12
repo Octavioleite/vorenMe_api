@@ -65,3 +65,40 @@ test("sobrenome é opcional; nome não", () => {
   c.name.first = " ";
   assert.deepEqual(validateCardConfig(c), ["Informe o nome."]);
 });
+
+test("conecta: aceita configuração completa", () => {
+  const c = structuredClone(templates[0].config);
+  c.connect = {
+    goal: "agendamento", title: "Como posso ajudar?", audience: "Pacientes adultos",
+    actions: [
+      { id: "aval", label: "Solicitar avaliação", channel: "whatsapp", message: "Olá! Encontrei seu cartão no VorenMe." },
+      { id: "form1", label: "Deixar contato", channel: "form" },
+      { id: "tel", label: "Ligar", channel: "phone", phone: "1133334444" },
+      { id: "site", label: "Ver tratamentos", channel: "link", url: "https://clinica.com/tratamentos" },
+    ],
+    services: [{ id: "clar", name: "Clareamento", description: "Em 2 sessões", action: "aval" }],
+  };
+  assert.deepEqual(validateCardConfig(c), []);
+});
+
+test("conecta: recusa objetivo, canal, destino e ligação inválidos", () => {
+  const c = structuredClone(templates[0].config);
+  delete c.email;
+  c.connect = {
+    goal: "ficar-rico",
+    actions: [
+      { id: "a", label: "", channel: "sms" },
+      { id: "b", label: "Site", channel: "link", url: "javascript:alert(1)" },
+      { id: "c", label: "Ligar", channel: "phone", phone: "abc" },
+      { id: "d", label: "E-mail", channel: "email" },
+      { id: "d", label: "Repetida", channel: "form" },
+    ],
+    services: [{ id: "s", name: "Clareamento", action: "nao-existe" }],
+  };
+  const errors = validateCardConfig(c);
+  for (const part of ["objetivo", "repetidas", "ação 1: escreva", "ação 1: escolha", "connect.actions[1].url", "ação 3: informe o telefone", "ação 4: cadastre o e-mail", "serviço 1: escolha"]) {
+    assert.ok(errors.some((e) => e.includes(part)), part);
+  }
+  c.connect = { goal: "clientes", actions: Array.from({ length: 7 }, (_, i) => ({ id: `a${i}`, label: "x", channel: "form" })) };
+  assert.ok(validateCardConfig(c).some((e) => e.includes("no máximo 6")));
+});

@@ -1,7 +1,7 @@
 // Erros com status (httpError) vão como estão; o resto vira 500 sem vazar detalhes.
 export const sendError = (res, error, context) => {
   if (error?.status) {
-    return res.status(error.status).json({ message: error.message });
+    return res.status(error.status).json({ message: error.message, ...(error.errors && { errors: error.errors }) });
   }
   console.error(`Error ${context}:`, error);
   return res.status(500).json({ message: "Algo deu errado. Tente novamente." });

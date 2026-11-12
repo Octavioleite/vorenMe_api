@@ -22,7 +22,7 @@ export const assertActive = async (userId) => {
 };
 
 // Cartão de outro usuário responde 404, igual a um inexistente.
-const findOwned = async (userId, id) => {
+export const findOwned = async (userId, id) => {
   const card = await cardRepository.findById(id);
   if (!card || card.userId !== userId) throw httpError(404, "Cartão não encontrado.");
   return card;

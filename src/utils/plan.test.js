@@ -47,3 +47,7 @@ test("status do admin", () => {
   assert.equal(isOnline({ createAt: ago(1), active: false }, now), false);
   assert.equal(untilFromYmd("2026-12-10").toISOString(), "2026-12-11T02:59:59.000Z");
 });
+
+test("modo básico tira o Conecta", () => {
+  assert.equal(basicConfig({ name: "x", connect: { goal: "clientes", actions: [] } }).connect, undefined);
+});

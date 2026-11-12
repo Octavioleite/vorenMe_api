@@ -1,25 +1,39 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 import { httpError } from "../utils/httpError.js";
+import { CONNECT_ID } from "../dto/card/config.js";
+import { visitorId } from "../utils/conecta.js";
 
 // Valores aceitos: o front manda, mas qualquer um pode chamar a rota pública, então só gravamos o que conhecemos.
 export const TARGETS = ["whatsapp", "email", "site", "instagram", "tiktok", "youtube", "pinterest", "spotify", "x", "website",
-  "cupom", "pix", "maps", "waze", "uber", "avaliar", "contato", "compartilhar", "destaque", "chamada", "marca", "link"];
+  "cupom", "pix", "maps", "waze", "uber", "avaliar", "contato", "compartilhar", "destaque", "chamada", "marca", "link",
+  "telefone", "formulario"];
+// Blocos com "visualização de seção" (entrou na tela).
+export const SECTIONS = ["conecta"];
 export const SOURCES = ["instagram", "tiktok", "facebook", "whatsapp", "qr", "google", "youtube", "x", "linkedin", "compartilhado", "contato", "direto", "outro"];
 
+const connectId = (v) => (typeof v === "string" && CONNECT_ID.test(v) ? v : null);
+
 export const normalizeEvent = (body) => {
-  const kind = body?.kind === "click" ? "click" : body?.kind === "view" ? "view" : null;
+  const kind = ["view", "click", "section"].includes(body?.kind) ? body.kind : null;
   if (!kind) return null;
+  if (kind === "section" && !SECTIONS.includes(body.target)) return null;
   const source = SOURCES.includes(body.source) ? body.source : "outro";
-  const target = kind === "click" ? (TARGETS.includes(body.target) ? body.target : "link") : null;
-  return { kind, source, target };
+  const target = kind === "click" ? (TARGETS.includes(body.target) ? body.target : "link") : kind === "section" ? body.target : null;
+  const event = { kind, source, target };
+  // Conecta: qual ação/serviço foi clicado, e quais ações estavam no cartão quando ele abriu.
+  if (kind === "click" && connectId(body.action)) event.action = body.action;
+  if (kind === "click" && connectId(body.interest)) event.interest = body.interest;
+  if (kind === "view" && Array.isArray(body.shown)) event.shown = [...new Set(body.shown.map(connectId).filter(Boolean))].slice(0, 6);
+  return event;
 };
 
-export const record = async (slug, body) => {
+/** `who` = { ip, ua } da requisição: só entram no hash do visitante (utils/conecta.js), nunca são gravados. */
+export const record = async (slug, body, who = {}) => {
   const event = normalizeEvent(body);
   if (!event) return;
   const card = await prisma.card.findUnique({ where: { slug: String(slug).toLowerCase() }, select: { id: true } });
-  if (card) await prisma.event.create({ data: { ...event, cardId: card.id } });
+  if (card) await prisma.event.create({ data: { ...event, cardId: card.id, visitor: visitorId(card.id, who.ip, who.ua) } });
 };
 
 const DAY = 24 * 60 * 60 * 1000;

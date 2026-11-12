@@ -2,6 +2,8 @@ import { Router, text } from "express";
 import rateLimit from "express-rate-limit";
 import * as publicController from "../controller/public.controller.js";
 import * as statsService from "../service/stats.service.js";
+import * as conecta from "../service/conecta.service.js";
+import { sendError } from "../utils/sendError.js";
 import { normalizeSite } from "../utils/origin.js";
 import prisma from "../lib/prisma.js";
 
@@ -15,16 +17,28 @@ router.get("/cards/:slug", publicController.getPublicCard);
 router.get("/page/:slug", publicController.getPublicPage);
 
 // Estatísticas. O front manda via sendBeacon com text/plain (não dispara preflight de CORS e sobrevive à navegação).
-// ponytail: sem deduplicar visitas repetidas da mesma pessoa; contar "visitantes únicos" com hash de IP+dia se pedirem.
+// Visitante único do Conecta: hash diário de IP+navegador (utils/conecta.js, visitorId), sem cookie.
 const eventLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, message: { message: "Muitas requisições." } });
 router.post("/cards/:slug/events", eventLimiter, text({ type: "*/*", limit: "2kb" }), async (req, res) => {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
-    await statsService.record(req.params.slug, body);
+    await statsService.record(req.params.slug, body, { ip: req.ip, ua: req.get("user-agent") });
   } catch {
     /* evento inválido: ignora */
   }
   return res.status(204).end();
+});
+
+// Conecta: formulário de contato do cartão. Sem login do visitante; consentimento obrigatório, isca anti-robô
+// (campo "website" escondido) e freio por IP e por cartão. Os dados vão só para o painel do dono.
+const leadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, message: { message: "Muitos envios. Tente de novo em alguns minutos." } });
+router.post("/cards/:slug/leads", leadLimiter, async (req, res) => {
+  try {
+    await conecta.createLead(req.params.slug, req.body ?? {});
+    return res.status(201).json({ message: "Contato enviado" });
+  } catch (error) {
+    return sendError(res, error, "creating lead");
+  }
 });
 
 // Página inicial (/): visitas e cliques no "Testar grátis", com a origem (utm/referrer). Mesmo esquema dos cartões.

@@ -40,5 +40,5 @@ export const statusOf = (user, now = new Date()) => {
 // "Válido até" escolhido no admin (YYYY-MM-DD) = fim daquele dia em Brasília.
 export const untilFromYmd = (ymd) => new Date(`${ymd}T23:59:59-03:00`);
 
-// Fica no layout "simples" (contatos + redes) e perde cupons, destaque, marcas e "agora".
-export const basicConfig = ({ featured, coupons, brands, now, ...config }) => ({ ...config, style: "simples" });
+// Fica no layout "simples" (contatos + redes) e perde cupons, destaque, marcas, "agora" e o Conecta.
+export const basicConfig = ({ featured, coupons, brands, now, connect, ...config }) => ({ ...config, style: "simples" });
