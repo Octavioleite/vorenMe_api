@@ -46,6 +46,16 @@ test("cupons: aceita válidos, recusa sem código ou com link inseguro", () => {
   assert.ok(errors.some((e) => e.includes("coupons[0].url")));
 });
 
+test("ordem dos blocos: aceita ids conhecidos, recusa desconhecido e repetido", () => {
+  const c = structuredClone(templates[0].config);
+  c.order = ["cupons", "destaque", "redes"];
+  assert.deepEqual(validateCardConfig(c), []);
+  for (const bad of [["cupons", "x}body{display:none"], ["cupons", "cupons"], "cupons"]) {
+    c.order = bad;
+    assert.deepEqual(validateCardConfig(c), ["Ordem dos blocos inválida."]);
+  }
+});
+
 test("pix, endereço e avaliação", () => {
   const c = structuredClone(templates[0].config);
   c.pix = { key: "a@b.com", name: "Ana", city: "São Paulo" };

@@ -12,6 +12,8 @@ const LABEL_KEYS = [
 const URL_KEYS = new Set(["url", "src", "logo", "ogImage", "siteUrl", "vorenUrl"]);
 const SAFE_URL = /^(https?:\/\/|\/(?!\/))/i;
 const HEX = /^#[0-9a-f]{6}$/i;
+// Blocos reordenáveis (vorenMe_app/src/config/types.ts, CARD_BLOCKS).
+const BLOCK_IDS = ["redes", "destaque", "local", "pix", "cupons", "chamada", "extra", "marcas"];
 const SLUG = /^[a-z0-9][a-z0-9._-]{2,30}$/;
 const RESERVED_SLUGS = ["painel", "api", "assets", "admin", "login", "cadastro", "www"];
 const MAX_CONFIG_BYTES = 50 * 1024;
@@ -109,6 +111,11 @@ export const validateCardConfig = (c) => {
   if (c.review !== undefined) need(isText(c.review?.url), "Avaliação: informe o link.");
 
   if (c.connect !== undefined) validateConnect(c, need);
+
+  // Lista fechada: o id vira seletor CSS no cartão (App.tsx).
+  if (c.order !== undefined) {
+    need(Array.isArray(c.order) && c.order.every((k) => BLOCK_IDS.includes(k)) && new Set(c.order).size === c.order.length, "Ordem dos blocos inválida.");
+  }
 
   need(isText(c.partnership?.title) && isText(c.partnership?.text), "Chamada principal: preencha o título e o texto.");
   need(typeof c.footer?.showVoren === "boolean", "Rodapé inválido.");
