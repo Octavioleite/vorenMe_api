@@ -6,6 +6,11 @@ import { notify, notifyOnce } from "./email.service.js";
 
 // Asaas: https://docs.asaas.com — ASAAS_URL = https://api-sandbox.asaas.com/v3 (teste) ou https://api.asaas.com/v3.
 export const PRICE = 9.99;
+// Anual: paga 10 meses e usa 12. Sem reembolso proporcional: cancelar só impede a renovação.
+export const ANNUAL_PRICE = 99.9;
+// Assinatura anual leva ":anual" no externalReference, que o Asaas copia para cada cobrança dela.
+// ponytail: depende dessa cópia do externalReference; conferir no sandbox.
+const isAnnual = (ref) => /:anual$/.test(ref ?? "");
 
 const asaas = async (path, method = "GET", body) => {
   const res = await fetch(process.env.ASAAS_URL + path, {
@@ -38,12 +43,15 @@ const pendingInvoiceUrl = async (subscriptionId) => {
 
 export const status = async (userId) => {
   const user = await findUser(userId);
+  const id = user.asaasSubscriptionId;
+  const [invoiceUrl, sub] = id ? await Promise.all([pendingInvoiceUrl(id), asaas(`/subscriptions/${id}`)]) : [null, null];
   return {
     activeUntil: activeUntil(user),
     offlineAt: offlineAt(user),
     active: isActive(user),
-    subscribed: Boolean(user.asaasSubscriptionId),
-    invoiceUrl: user.asaasSubscriptionId ? await pendingInvoiceUrl(user.asaasSubscriptionId) : null,
+    subscribed: Boolean(id),
+    plan: sub ? (sub.cycle === "YEARLY" ? "anual" : "mensal") : null,
+    invoiceUrl,
     referral: await referralInfo(user),
   };
 };
@@ -85,29 +93,41 @@ export const overdueInvoices = async () => {
   };
 };
 
-// Cria cliente + assinatura mensal. A 1ª cobrança vence quando o trial (ou o período pago) acaba.
+// Cria cliente + assinatura mensal ou anual (`plan`). A 1ª cobrança vence quando o trial (ou o período pago) acaba.
 // billingType UNDEFINED: a pessoa escolhe Pix, boleto ou cartão na fatura do Asaas.
-export const subscribe = async (userId, cpfCnpj) => {
+export const subscribe = async (userId, cpfCnpj, plan = "mensal") => {
   const user = await findUser(userId);
   if (user.asaasSubscriptionId) return { invoiceUrl: await pendingInvoiceUrl(user.asaasSubscriptionId) };
 
   const customerId = await ensureCustomer(user, cpfCnpj);
 
   const due = new Date(Math.max(Date.now(), activeUntil(user).getTime()));
+  const annual = plan === "anual";
   const sub = await asaas("/subscriptions", "POST", {
     customer: customerId,
     billingType: "UNDEFINED",
-    value: PRICE,
+    value: annual ? ANNUAL_PRICE : PRICE,
     nextDueDate: ymd(due),
-    cycle: "MONTHLY",
-    description: "VorenMe — plano mensal",
-    externalReference: user.id,
+    cycle: annual ? "YEARLY" : "MONTHLY",
+    description: annual ? "VorenMe — plano anual (paga 10 meses, usa 12)" : "VorenMe — plano mensal",
+    externalReference: annual ? `${user.id}:anual` : user.id,
     // Depois de pagar, a fatura volta para o painel. O domínio precisa estar cadastrado na conta Asaas
     // (Minha Conta → Informações → Site), senão o Asaas recusa. Sem FRONT_URL (dev) fica sem redirect.
     ...(process.env.FRONT_URL && { callback: { successUrl: `${process.env.FRONT_URL}/painel/assinatura?pago=1`, autoRedirect: true } }),
   });
   await prisma.user.update({ where: { id: userId }, data: { asaasSubscriptionId: sub.id } });
   return { invoiceUrl: await pendingInvoiceUrl(sub.id) };
+};
+
+// Troca mensal <-> anual: apaga a assinatura atual (e a fatura pendente dela) e cria a nova, que só cobra
+// quando o período já pago acaba. Sem reembolso e sem cobrança extra. Não conta como cancelamento no admin.
+export const changePlan = async (userId, plan) => {
+  const user = await findUser(userId);
+  if (!user.asaasSubscriptionId) throw httpError(400, "Você ainda não tem assinatura.");
+  await asaas(`/subscriptions/${user.asaasSubscriptionId}`, "DELETE");
+  await prisma.user.update({ where: { id: userId }, data: { asaasSubscriptionId: null } });
+  await prisma.activity.create({ data: { userId, actor: "usuario", action: "subscription.plan", data: { from: user.asaasSubscriptionId, plan } } });
+  return subscribe(userId, null, plan); // cliente Asaas já existe, o CPF não é usado
 };
 
 // Cancela na hora, sem retenção. O acesso continua até o fim do período já pago.
@@ -140,6 +160,7 @@ const applyCredit = async (userId) => {
   const { data } = await asaas(`/payments?subscription=${user.asaasSubscriptionId}&status=PENDING&limit=1`);
   const pending = data?.[0];
   if (!pending) return; // aplica no PAYMENT_CREATED da próxima
+  if (isAnnual(pending.externalReference)) return; // anual: apagar a fatura daria 12 meses; o crédito fica guardado
   // Decremento condicional primeiro: dois webhooks simultâneos não gastam o mesmo crédito duas vezes.
   const { count } = await prisma.user.updateMany({ where: { id: userId, freeMonths: { gte: 1 } }, data: { freeMonths: { decrement: 1 } } });
   if (!count) return;
@@ -181,9 +202,10 @@ export const handleWebhook = async ({ event, payment }) => {
   // Linha já gravada (CONFIRMED antes do RECEIVED, ou estorno): usa a data que ela liberou.
   const row = await prisma.payment.findUnique({ where: { asaasId: String(payment.id) } });
   const linkMonths = Number(/:link:(\d+)$/.exec(payment.externalReference ?? "")?.[1]);
+  const months = isAnnual(payment.externalReference) ? 12 : 1;
 
   if (PAID.includes(event)) {
-    let until = row?.until ?? paidUntilFrom(payment.dueDate);
+    let until = row?.until ?? paidUntilFrom(payment.dueDate, months);
     if (!row && linkMonths) { // link avulso: N meses a partir de hoje ou do fim do período atual
       until = new Date(Math.max(Date.now(), activeUntil(user).getTime()));
       for (let i = 0; i < linkMonths; i++) until = addMonth(until);
@@ -196,13 +218,13 @@ export const handleWebhook = async ({ event, payment }) => {
       update: {}, // corrida entre os dois: o 2º dá P2002 → 500 → o Asaas reenvia e cai aqui
     });
     // Um e-mail por pagamento (o Asaas manda CONFIRMED e depois RECEIVED para o mesmo pagamento).
-    await notifyOnce(user, `paid:${payment.id}`, "paymentConfirmed", { until: user.paidUntil && user.paidUntil > until ? user.paidUntil : until });
+    await notifyOnce(user, `paid:${payment.id}`, "paymentConfirmed", { until: user.paidUntil && user.paidUntil > until ? user.paidUntil : until, value: payment.value });
     await rewardReferrer(user);
   } else if (event === "PAYMENT_CREATED") {
     await applyCredit(user.id);
   } else if (REVERSED.includes(event)) {
     await prisma.payment.updateMany({ where: { asaasId: payment.id, refundedAt: null }, data: { refundedAt: new Date() } });
-    if (user.paidUntil?.getTime() !== (row?.until ?? paidUntilFrom(payment.dueDate)).getTime()) return;
+    if (user.paidUntil?.getTime() !== (row?.until ?? paidUntilFrom(payment.dueDate, months)).getTime()) return;
     // ponytail: estorno só desfaz o último pagamento; recalcular pelo histórico se houver estorno de meses antigos.
     await prisma.user.update({ where: { id: user.id }, data: { paidUntil: row?.prevPaidUntil ?? null } });
   }

@@ -1,4 +1,4 @@
-// Plano único (R$ 9,99/mês): 3 dias grátis a partir do cadastro, depois vale até `paidUntil`.
+// Plano mensal (R$ 9,99) ou anual (R$ 99,90 = paga 10 meses, usa 12): 3 dias grátis a partir do cadastro, depois vale até `paidUntil`.
 // ponytail: `paidUntil` no User em vez de tabela Subscription; o webhook do gateway só avança essa data.
 // Criar a tabela quando precisar de histórico de cobranças ou mais de um plano.
 export const TRIAL_DAYS = 3;
@@ -11,7 +11,7 @@ export const activeUntil = (user) => {
   return user.paidUntil && new Date(user.paidUntil) > trialEnd ? new Date(user.paidUntil) : trialEnd;
 };
 
-// Pagamento da mensalidade com vencimento `dueDate` (YYYY-MM-DD) libera 1 mês + 3 dias de folga
+// Pagamento com vencimento `dueDate` (YYYY-MM-DD) libera `months` meses (1 mensal, 12 anual) + 3 dias de folga
 // (boleto compensa em até 3 dias úteis). Idempotente: o mesmo webhook repetido dá a mesma data.
 export const GRACE_DAYS = 3;
 export const addMonth = (date) => {
@@ -19,7 +19,11 @@ export const addMonth = (date) => {
   d.setUTCMonth(d.getUTCMonth() + 1);
   return d;
 };
-export const paidUntilFrom = (dueDate) => new Date(addMonth(`${dueDate}T23:59:59-03:00`).getTime() + GRACE_DAYS * DAY);
+export const paidUntilFrom = (dueDate, months = 1) => {
+  const d = new Date(`${dueDate}T23:59:59-03:00`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return new Date(d.getTime() + GRACE_DAYS * DAY);
+};
 
 export const isActive = (user, now = new Date()) => activeUntil(user) > now;
 

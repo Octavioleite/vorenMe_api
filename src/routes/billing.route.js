@@ -10,8 +10,11 @@ router.get("/", appTokenMiddleware, handle("billing status", (req) => billingSer
 router.post("/subscribe", appTokenMiddleware, notSupport, handle("subscribing", (req) => {
   const cpfCnpj = String(req.body?.cpfCnpj ?? "").replace(/\D/g, "");
   if (cpfCnpj.length !== 11 && cpfCnpj.length !== 14) throw Object.assign(new Error("Informe um CPF ou CNPJ válido."), { status: 400 });
-  return billingService.subscribe(req.user.id, cpfCnpj);
+  return billingService.subscribe(req.user.id, cpfCnpj, req.body?.plan === "anual" ? "anual" : "mensal");
 }));
+
+router.post("/plan", appTokenMiddleware, notSupport, handle("changing plan", (req) =>
+  billingService.changePlan(req.user.id, req.body?.plan === "anual" ? "anual" : "mensal")));
 
 router.post("/cancel", appTokenMiddleware, notSupport, handle("canceling", (req) => billingService.cancel(req.user.id)));
 

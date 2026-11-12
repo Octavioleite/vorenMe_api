@@ -6,6 +6,7 @@ import { isActive, isOnline, basicConfig, paidUntilFrom, statusOf, untilFromYmd 
 test("pagamento libera 1 mês + folga", () => {
   assert.equal(paidUntilFrom("2026-11-10").toISOString(), "2026-12-14T02:59:59.000Z");
   assert.equal(paidUntilFrom("2026-01-31").toISOString().slice(0, 10), "2026-03-04"); // fim de mês não quebra: ~1 mês + 3 dias
+  assert.equal(paidUntilFrom("2026-11-10", 12).toISOString(), "2027-11-14T02:59:59.000Z"); // anual
 });
 import { validateCardConfig } from "../dto/card/config.js";
 import templates from "../templates/index.js";

@@ -52,11 +52,11 @@ export const templates = {
     }),
   }),
 
-  paymentConfirmed: (u, { until }) => ({
+  paymentConfirmed: (u, { until, value = 9.99 }) => ({
     subject: "Pagamento confirmado",
     ...layout({
       title: "Pagamento confirmado, obrigado!",
-      lines: [hi(u), `Recebemos seu pagamento de R$ 9,99. Seus cartões estão completos e no ar até ${date(until)}.`,
+      lines: [hi(u), `Recebemos seu pagamento de R$ ${Number(value).toFixed(2).replace(".", ",")}. Seus cartões estão completos e no ar até ${date(until)}.`,
         "A próxima fatura chega por e-mail antes do vencimento."],
       cta: billing(),
     }),
