@@ -1,4 +1,4 @@
-import { activeUntil, isPublished } from "../../utils/plan.js";
+import { activeUntil, isAdmin, isPublished } from "../../utils/plan.js";
 
 // Nunca inclui o password.
 export default class ListUserDto {
@@ -10,5 +10,6 @@ export default class ListUserDto {
     this.activeUntil = activeUntil(data);
     this.emailVerified = Boolean(data.emailVerifiedAt);
     this.published = isPublished(data); // cartões abertos ao público (utils/plan.js)
+    this.admin = isAdmin(data); // sem assinatura e sem limite de cartões
   }
 }

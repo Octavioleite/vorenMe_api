@@ -49,6 +49,13 @@ test("status do admin", () => {
   assert.equal(untilFromYmd("2026-12-10").toISOString(), "2026-12-11T02:59:59.000Z");
 });
 
+test("admin não vence", () => {
+  process.env.ADMIN_EMAILS = "a@x.com, b@x.com";
+  assert.equal(isActive({ createAt: ago(400), email: "B@x.com" }, now), true);
+  assert.equal(isOnline({ createAt: ago(400), email: "b@x.com" }, now), true);
+  assert.equal(isActive({ createAt: ago(400), email: "c@x.com" }, now), false);
+});
+
 test("modo básico tira o Conecta", () => {
   assert.equal(basicConfig({ name: "x", connect: { goal: "clientes", actions: [] } }).connect, undefined);
 });

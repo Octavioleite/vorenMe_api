@@ -6,7 +6,13 @@ export const MAX_CARDS = 3;
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// Admin = e-mail em ADMIN_EMAILS (separados por vírgula). Não paga e não tem limite de cartões.
+export const admins = () => (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+export const isAdmin = (user) => !!user?.email && admins().includes(user.email.toLowerCase());
+const FOREVER = new Date("9999-12-31T23:59:59Z");
+
 export const activeUntil = (user) => {
+  if (isAdmin(user)) return FOREVER;
   const trialEnd = new Date(new Date(user.createAt).getTime() + TRIAL_DAYS * DAY);
   return user.paidUntil && new Date(user.paidUntil) > trialEnd ? new Date(user.paidUntil) : trialEnd;
 };

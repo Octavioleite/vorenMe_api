@@ -3,7 +3,7 @@ import * as templateService from "./template.service.js";
 import ListCardDto from "../dto/card/list.dto.js";
 import * as userRepository from "../repository/user.repository.js";
 import { httpError } from "../utils/httpError.js";
-import { MAX_CARDS, isActive, isOnline, isPublished, basicConfig } from "../utils/plan.js";
+import { MAX_CARDS, isActive, isAdmin, isOnline, isPublished, basicConfig } from "../utils/plan.js";
 import prisma from "../lib/prisma.js";
 
 // Slug liberado fica com o antigo dono por SLUG_HOLD_DAYS (ver model SlugHold).
@@ -52,9 +52,9 @@ export const register = async (userId, dto) => {
 
   // Criar e editar é livre; o cartão só vai ao ar com o e-mail confirmado (isPublished). Quem monta o cartão antes
   // tem motivo para confirmar, e contas giradas para emendar trials não ganham nada com cartão que ninguém vê.
-  await assertActive(userId);
+  const user = await assertActive(userId);
   // ponytail: count + insert sem lock; dois POSTs simultâneos podem passar do limite por 1. Aceitável.
-  if ((await cardRepository.countByUser(userId)) >= MAX_CARDS) {
+  if (!isAdmin(user) && (await cardRepository.countByUser(userId)) >= MAX_CARDS) {
     throw httpError(403, `Seu plano inclui até ${MAX_CARDS} cartões. Exclua um para criar outro.`);
   }
   await assertSlugFree(userId, dto.slug);

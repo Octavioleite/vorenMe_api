@@ -1,5 +1,6 @@
 import { verifyToken, verifyRefreshToken } from "../utils/jwt.js";
 import prisma from "../lib/prisma.js";
+import { admins } from "../utils/plan.js";
 
 export const appTokenMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
@@ -57,9 +58,9 @@ export const refreshTokenMiddleware = (req, res, next) => {
   }
 };
 
-// Admin = e-mail em ADMIN_EMAILS (separados por vírgula), confirmado, conta ativa e token da versão atual.
+// Admin = e-mail em ADMIN_EMAILS (utils/plan.js), confirmado, conta ativa e token da versão atual.
 // Confere no banco a cada request: senha trocada ou conta desativada perde o acesso na hora.
-export const admins = () => (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+export { admins };
 export const adminMiddleware = [appTokenMiddleware, async (req, res, next) => {
   try {
     if (req.user.imp) return res.status(403).json({ message: "Acesso negado." });
