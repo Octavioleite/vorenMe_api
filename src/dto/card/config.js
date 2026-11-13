@@ -1,7 +1,7 @@
 // Validação do CreatorConfig (vorenMe_app/src/config/types.ts).
 // ponytail: espelha o tipo TS à mão — se os dois começarem a divergir, extrair um schema compartilhado.
 
-const STYLES = ["criador", "forte", "tinta", "atelie", "sereno", "glam", "clinica", "leve", "simples"];
+const STYLES = ["criador", "forte", "tinta", "atelie", "sereno", "glam", "clinica", "leve", "sobrio", "palco", "oficio", "galeria", "simples"];
 const PLATFORMS = ["instagram", "tiktok", "youtube", "pinterest", "spotify", "x", "website"];
 const LABEL_KEYS = [
   "socials", "featured", "now", "brands", "whatsapp", "email", "saveContact", "share", "linkCopied",
@@ -14,6 +14,12 @@ const SAFE_URL = /^(https?:\/\/|\/(?!\/))/i;
 const HEX = /^#[0-9a-f]{6}$/i;
 // Blocos reordenáveis (vorenMe_app/src/config/types.ts, CARD_BLOCKS).
 const BLOCK_IDS = ["redes", "destaque", "local", "pix", "cupons", "chamada", "extra", "marcas"];
+// Fontes por texto (vorenMe_app/src/config/types.ts, FONTS).
+const FONTS = ["geist", "oswald", "syne", "fredoka", "playfair", "dmserif"];
+// Elementos soltos sobre a foto (vorenMe_app/src/config/types.ts, Extra).
+const EXTRA_KINDS = ["text", "shape", "image"];
+const MAX_EXTRAS = 12;
+const inRange = (v, min, max) => Number.isFinite(v) && v >= min && v <= max;
 const SLUG = /^[a-z0-9][a-z0-9._-]{2,30}$/;
 const RESERVED_SLUGS = ["painel", "api", "assets", "admin", "login", "cadastro", "www"];
 const MAX_CONFIG_BYTES = 50 * 1024;
@@ -111,6 +117,29 @@ export const validateCardConfig = (c) => {
   if (c.review !== undefined) need(isText(c.review?.url), "Avaliação: informe o link.");
 
   if (c.connect !== undefined) validateConnect(c, need);
+
+  // Textos sobre a foto: cor e fonte viram estilo inline no cartão (Hero.tsx).
+  const pieces = [c.photo?.layout, c.photo?.layoutMobile].flatMap((l) => (l && typeof l === "object" ? Object.values(l) : []));
+  need(pieces.every((t) => t && typeof t === "object" && (t.color === undefined || HEX.test(t.color)) && (t.font === undefined || FONTS.includes(t.font))),
+    "Fonte ou cor de um texto do cartão inválida.");
+
+  if (c.extras !== undefined) {
+    need(Array.isArray(c.extras) && c.extras.length <= MAX_EXTRAS, `Elementos do cartão: no máximo ${MAX_EXTRAS}.`);
+    (Array.isArray(c.extras) ? c.extras : []).forEach((x, i) => {
+      const n = `Elemento ${i + 1} do cartão`;
+      need(CONNECT_ID.test(x?.id ?? "") && EXTRA_KINDS.includes(x?.kind), `${n}: inválido.`);
+      need(inRange(x?.x, 0, 100) && inRange(x?.y, 0, 100) && inRange(x?.size, 1, 100), `${n}: posição ou tamanho inválido.`);
+      need(x?.color === undefined || HEX.test(x.color), `${n}: cor inválida.`);
+      need(x?.font === undefined || FONTS.includes(x.font), `${n}: fonte inválida.`);
+      need(x?.ratio === undefined || inRange(x.ratio, 0.05, 20), `${n}: proporção inválida.`);
+      if (x?.kind === "text") need(isText(x.text) && x.text.length <= 120, `${n}: escreva o texto (até 120 caracteres).`);
+      if (x?.kind === "image") need(isText(x.src), `${n}: envie a imagem.`); // esquema seguro: unsafeUrls
+    });
+  }
+  if (c.width !== undefined) {
+    need(c.width && typeof c.width === "object" && Object.entries(c.width).every(([k, w]) => BLOCK_IDS.includes(k) && (w === "half" || w === "full")),
+      "Largura dos blocos inválida.");
+  }
 
   // Lista fechada: o id vira seletor CSS no cartão (App.tsx).
   if (c.order !== undefined) {

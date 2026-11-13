@@ -13,10 +13,10 @@ export const templates = {
     subject: "Confirme seu e-mail e comece no VorenMe",
     ...layout({
       title: "Bem-vindo ao VorenMe",
-      preview: "Confirme seu e-mail para proteger sua conta. Você tem 3 dias grátis.",
+      preview: "Confirme seu e-mail para colocar seu cartão no ar. Você tem 3 dias grátis.",
       lines: [hi(u), "Sua conta está criada e você tem 3 dias grátis para testar tudo, sem cartão de crédito.",
-        "Antes de tudo, confirme que este e-mail é seu. É por ele que você recupera a senha e recebe os avisos da assinatura.",
-        "Depois é só escolher um modelo, colocar seu WhatsApp, Pix e endereço, e compartilhar o link na bio e nos grupos."],
+        "Confirme que este e-mail é seu para colocar seu cartão no ar. Você pode montar o cartão antes; ele só abre para os clientes depois da confirmação.",
+        "Também é por este e-mail que você recupera a senha e recebe os avisos da assinatura."],
       cta: { label: "Confirmar meu e-mail", url: verifyLink },
       footnote: "O link vale por 7 dias. Se você não criou esta conta, pode ignorar este e-mail.",
     }),

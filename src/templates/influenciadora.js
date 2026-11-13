@@ -15,7 +15,7 @@ export default {
     bio: "Treino possível para a vida real. Força, constância e zero culpa, sem promessa milagrosa.",
     niche: "Fitness & treino de força",
     location: "Rio de Janeiro",
-    accent: "#E8552B",
+    accent: "#C6F24E",
     theme: "dark",
     style: "criador",
     availability: { open: true, label: "Agenda aberta para collabs" },

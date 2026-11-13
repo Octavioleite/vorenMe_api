@@ -17,7 +17,7 @@ export default {
     location: "Campinas",
     accent: "#E0A21B",
     theme: "light",
-    style: "simples",
+    style: "oficio",
     availability: { open: true, label: "Atendo também aos sábados" },
     socials: [
       { platform: "instagram", handle: "@marcos.eletricista", url: "https://instagram.com/marcos.eletricista" },

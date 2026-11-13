@@ -17,7 +17,7 @@ export default {
     location: "São Paulo",
     accent: "#3B5BDB",
     theme: "light",
-    style: "clinica",
+    style: "sobrio",
     availability: { open: true, label: "Atendimento online em todo o Brasil" },
     socials: [
       { platform: "instagram", handle: "@paulonogueira.contabil", url: "https://instagram.com/paulonogueira.contabil" },

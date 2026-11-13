@@ -128,7 +128,7 @@ export const siteStats = async (query = {}) => {
   const users = Prisma.sql`"createAt" >= ${r.gte} AND "createAt" < ${r.lt} AND ${notAdmin()}`;
   const paid = Prisma.sql`count(*) FILTER (WHERE EXISTS (SELECT 1 FROM "Payment" p WHERE p."userId" = u.id AND p.amount > 0 AND p."refundedAt" IS NULL))::int`;
   const visits = Prisma.sql`count(*) FILTER (WHERE kind = 'view')::int AS views, count(*) FILTER (WHERE kind = 'view' AND "new")::int AS visitors,
-    count(*) FILTER (WHERE kind = 'cta')::int AS cta`;
+    count(*) FILTER (WHERE kind = 'cta')::int AS cta, count(*) FILTER (WHERE kind = 'form')::int AS form, count(*) FILTER (WHERE kind = 'start')::int AS start`;
   const day = (col) => Prisma.sql`to_char((${Prisma.raw(col)} AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD')`;
 
   const [evDay, userDay, evSource, userSource, evCampaign, userCampaign, devices] = await Promise.all([
@@ -143,7 +143,7 @@ export const siteStats = async (query = {}) => {
   ]);
 
   // Junta as linhas de eventos e de cadastros pela mesma chave, com zeros onde faltar.
-  const zero = { views: 0, visitors: 0, cta: 0, signups: 0, paid: 0 };
+  const zero = { views: 0, visitors: 0, cta: 0, form: 0, start: 0, signups: 0, paid: 0 };
   const merge = (keyOf, ...lists) => {
     const m = new Map();
     for (const row of lists.flat()) m.set(keyOf(row), { ...zero, ...m.get(keyOf(row)), ...row });
@@ -159,7 +159,7 @@ export const siteStats = async (query = {}) => {
     from: r.from,
     to: r.to,
     days: r.days,
-    totals: { views: sum("views"), visitors: sum("visitors"), cta: sum("cta"), signups: sum("signups"), paid: userSource.reduce((a, x) => a + x.paid, 0) },
+    totals: { views: sum("views"), visitors: sum("visitors"), cta: sum("cta"), form: sum("form"), start: sum("start"), signups: sum("signups"), paid: userSource.reduce((a, x) => a + x.paid, 0) },
     byDay,
     bySource: merge((x) => x.source, evSource, userSource),
     byCampaign: merge((x) => `${x.source}|${x.campaign}`, evCampaign, userCampaign),

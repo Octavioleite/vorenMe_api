@@ -15,7 +15,7 @@ export default {
     bio: "Pele saudável com protocolo feito para você. Avaliação antes de qualquer procedimento, sempre.",
     niche: "Esteticista · Registro profissional 00000",
     location: "Florianópolis",
-    accent: "#A47C6B",
+    accent: "#4F6D7A",
     theme: "light",
     style: "sereno",
     availability: { open: true, label: "Horários disponíveis esta semana" },

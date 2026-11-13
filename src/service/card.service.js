@@ -3,7 +3,7 @@ import * as templateService from "./template.service.js";
 import ListCardDto from "../dto/card/list.dto.js";
 import * as userRepository from "../repository/user.repository.js";
 import { httpError } from "../utils/httpError.js";
-import { MAX_CARDS, isActive, isOnline, basicConfig } from "../utils/plan.js";
+import { MAX_CARDS, isActive, isOnline, isPublished, basicConfig } from "../utils/plan.js";
 import prisma from "../lib/prisma.js";
 
 // Slug liberado fica com o antigo dono por SLUG_HOLD_DAYS (ver model SlugHold).
@@ -50,9 +50,9 @@ export const register = async (userId, dto) => {
   const template = templateService.findById(dto.template);
   if (!template) throw httpError(400, "Modelo não encontrado.");
 
-  const user = await assertActive(userId);
-  // Sem verificação, dava para girar contas novas e emendar trials de 3 dias para sempre.
-  if (!user.emailVerifiedAt) throw httpError(403, "Confirme seu e-mail para criar cartões. O link está na sua caixa de entrada.");
+  // Criar e editar é livre; o cartão só vai ao ar com o e-mail confirmado (isPublished). Quem monta o cartão antes
+  // tem motivo para confirmar, e contas giradas para emendar trials não ganham nada com cartão que ninguém vê.
+  await assertActive(userId);
   // ponytail: count + insert sem lock; dois POSTs simultâneos podem passar do limite por 1. Aceitável.
   if ((await cardRepository.countByUser(userId)) >= MAX_CARDS) {
     throw httpError(403, `Seu plano inclui até ${MAX_CARDS} cartões. Exclua um para criar outro.`);
@@ -95,6 +95,6 @@ export const remove = async (userId, id) => {
 export const getPublicBySlug = async (slug) => {
   const card = await cardRepository.findBySlug(String(slug).toLowerCase());
   if (!card) throw httpError(404, "Cartão não encontrado.");
-  if (card.disabledAt || !isOnline(card.user)) throw httpError(410, "Cartão indisponível.");
+  if (card.disabledAt || !isOnline(card.user) || !isPublished(card.user)) throw httpError(410, "Cartão indisponível.");
   return isActive(card.user) ? card.config : basicConfig(card.config);
 };

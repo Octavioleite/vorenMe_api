@@ -34,6 +34,11 @@ export const offlineAt = (user) => new Date(activeUntil(user).getTime() + OFFLIN
 // Conta desativada no admin tira os cartões do ar na hora.
 export const isOnline = (user, now = new Date()) => user.active !== false && offlineAt(user) > now;
 
+// Contas de antes da confirmação de e-mail (migração 20261112120000_email_verify) têm emailVerifiedAt vazio e cartões
+// no ar: continuam publicadas. Daí em diante, o cartão só abre para o público depois de confirmar o e-mail.
+const VERIFY_SINCE = new Date("2026-11-12T12:00:00Z");
+export const isPublished = (user) => !!user.emailVerifiedAt || new Date(user.createAt) < VERIFY_SINCE;
+
 // Uma palavra para o admin: desativado | pagante | trial | basico (vencido, ainda no ar) | offline.
 export const statusOf = (user, now = new Date()) => {
   if (user.active === false) return "desativado";

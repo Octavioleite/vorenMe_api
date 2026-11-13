@@ -17,7 +17,7 @@ export default {
     location: "Florianópolis",
     accent: "#C9A227",
     theme: "dark",
-    style: "forte",
+    style: "sobrio",
     availability: { open: true, label: "Atendimento todos os dias" },
     socials: [
       { platform: "instagram", handle: "@marcosteixeira.imoveis", url: "https://instagram.com/marcosteixeira.imoveis" },

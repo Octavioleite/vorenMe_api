@@ -17,7 +17,7 @@ export default {
     location: "Belo Horizonte",
     accent: "#E4572E",
     theme: "dark",
-    style: "tinta",
+    style: "galeria",
     availability: { open: true, label: "Datas abertas para 2026" },
     socials: [
       { platform: "instagram", label: "Portfólio", handle: "@rafalimafoto", url: "https://instagram.com/rafalimafoto" },

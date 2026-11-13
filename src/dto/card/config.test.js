@@ -112,3 +112,27 @@ test("conecta: recusa objetivo, canal, destino e ligação inválidos", () => {
   c.connect = { goal: "clientes", actions: Array.from({ length: 7 }, (_, i) => ({ id: `a${i}`, label: "x", channel: "form" })) };
   assert.ok(validateCardConfig(c).some((e) => e.includes("no máximo 6")));
 });
+
+test("valida fonte e cor dos textos sobre a foto", () => {
+  const c = structuredClone(templates[0].config);
+  c.photo.layout = { first: { font: "oswald", color: "#FAFAF9", x: 10, y: 20 } };
+  assert.deepEqual(validateCardConfig(c), []);
+  c.photo.layoutMobile = { first: { font: "comic", color: "red" } };
+  assert.equal(validateCardConfig(c).length, 1);
+});
+
+test("valida elementos soltos e largura dos blocos", () => {
+  const c = structuredClone(templates[0].config);
+  c.extras = [
+    { id: "a1", kind: "text", text: "Promo", x: 50, y: 20, size: 9, font: "syne", color: "#FAFAF9" },
+    { id: "b2", kind: "shape", x: 0, y: 100, size: 100, ratio: 3, round: true },
+    { id: "c3", kind: "image", src: "https://x.com/i.webp", x: 10, y: 10, size: 30, ratio: 1.5 },
+  ];
+  c.width = { redes: "half", pix: "full" };
+  assert.deepEqual(validateCardConfig(c), []);
+  c.extras[0].text = "";
+  c.extras[1].x = 300;
+  c.extras[2].src = "javascript:alert(1)";
+  c.width.redes = "giant";
+  assert.equal(validateCardConfig(c).length, 4);
+});

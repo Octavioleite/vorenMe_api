@@ -17,7 +17,7 @@ export default {
     location: "São Paulo",
     accent: "#2F4A6D",
     theme: "light",
-    style: "clinica",
+    style: "sobrio",
     availability: { open: true, label: "Consultas online e presenciais" },
     socials: [
       { platform: "instagram", handle: "@helenaprates.adv", url: "https://instagram.com/helenaprates.adv" },

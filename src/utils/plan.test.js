@@ -1,7 +1,7 @@
 // node --test src/utils/plan.test.js
 import test from "node:test";
 import assert from "node:assert/strict";
-import { isActive, isOnline, basicConfig, paidUntilFrom, statusOf, untilFromYmd } from "./plan.js";
+import { isActive, isOnline, isPublished, basicConfig, paidUntilFrom, statusOf, untilFromYmd } from "./plan.js";
 
 test("pagamento libera 1 mês + folga", () => {
   assert.equal(paidUntilFrom("2026-11-10").toISOString(), "2026-12-14T02:59:59.000Z");
@@ -51,4 +51,10 @@ test("status do admin", () => {
 
 test("modo básico tira o Conecta", () => {
   assert.equal(basicConfig({ name: "x", connect: { goal: "clientes", actions: [] } }).connect, undefined);
+});
+
+test("cartão só vai ao ar com e-mail confirmado, menos contas de antes da confirmação existir", () => {
+  assert.equal(isPublished({ createAt: new Date("2026-11-20"), emailVerifiedAt: null }), false);
+  assert.equal(isPublished({ createAt: new Date("2026-11-20"), emailVerifiedAt: new Date("2026-11-20") }), true);
+  assert.equal(isPublished({ createAt: new Date("2026-10-01"), emailVerifiedAt: null }), true); // conta antiga continua no ar
 });

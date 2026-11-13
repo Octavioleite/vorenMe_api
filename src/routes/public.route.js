@@ -52,4 +52,16 @@ router.post("/site/events", eventLimiter, text({ type: "*/*", limit: "2kb" }), a
   return res.status(204).end();
 });
 
+// Prova social da página inicial: quantos cartões já foram criados (número real, sem arredondar para cima).
+// Cache de 10 min em memória: a landing chama isso em toda visita.
+let created = { n: 0, at: 0 };
+router.get("/site/stats", async (_req, res) => {
+  try {
+    if (Date.now() - created.at > 10 * 60 * 1000) created = { n: await prisma.card.count({ where: { disabledAt: null } }), at: Date.now() };
+    return res.set("Cache-Control", "public, max-age=600").json({ cards: created.n });
+  } catch (error) {
+    return sendError(res, error, "site stats");
+  }
+});
+
 export default router;

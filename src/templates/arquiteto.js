@@ -17,7 +17,7 @@ export default {
     location: "Brasília",
     accent: "#7A8F6B",
     theme: "light",
-    style: "atelie",
+    style: "galeria",
     availability: { open: true, label: "Agenda aberta para novos projetos" },
     socials: [
       { platform: "instagram", handle: "@liviaandrade.arq", url: "https://instagram.com/liviaandrade.arq" },

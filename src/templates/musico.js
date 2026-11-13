@@ -17,7 +17,7 @@ export default {
     location: "Fortaleza",
     accent: "#9B5DE5",
     theme: "dark",
-    style: "criador",
+    style: "palco",
     availability: { open: true, label: "Datas abertas para este ano" },
     socials: [
       { platform: "instagram", handle: "@djkaioreis", url: "https://instagram.com/djkaioreis" },

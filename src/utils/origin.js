@@ -12,9 +12,11 @@ export const cleanOrigin = (o) => {
   return out;
 };
 
-/** Evento da página inicial: view (abriu) ou cta (clicou em "Testar grátis"). Device sai do user-agent do servidor. */
+/** Funil da página inicial: view (abriu a /), cta (clicou em "Testar grátis"), form (abriu o cadastro),
+ *  start (começou a preencher). Device sai do user-agent do servidor. */
+const SITE_KINDS = ["view", "cta", "form", "start"];
 export const normalizeSite = (body, ua = "") => {
-  const kind = body?.kind === "view" || body?.kind === "cta" ? body.kind : null;
+  const kind = SITE_KINDS.includes(body?.kind) ? body.kind : null;
   if (!kind) return null;
   return {
     kind,
