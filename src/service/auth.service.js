@@ -9,6 +9,7 @@ import prisma from "../lib/prisma.js";
 import { notify, templates } from "./email.service.js";
 import { sendMail } from "../utils/mail.js";
 import { holdSlugs } from "./card.service.js";
+import { verifyGoogleToken } from "../utils/google.js";
 
 // Hash de mentira: login com e-mail inexistente gasta o mesmo scrypt que um de verdade.
 const DUMMY_HASH = await hashPassword(randomBytes(16).toString("hex"));
@@ -21,22 +22,24 @@ const newVerifyToken = () => {
   const token = randomBytes(32).toString("hex");
   return { token, data: { verifyTokenHash: createHash("sha256").update(token).digest("hex"), verifyTokenExp: new Date(Date.now() + VERIFY_TTL) } };
 };
-const verifyLink = (token) => `${process.env.FRONT_URL || "http://localhost:5173"}/painel?verificar=${token}`;
+const front = () => process.env.FRONT_URL || "http://localhost:5173";
+const verifyLink = (token) => `${front()}/painel?verificar=${token}`;
+
+// Indicação: `ref` é o slug do cartão de onde a pessoa veio (selo "Feito com VorenMe").
+const referrerId = async (ref) =>
+  typeof ref === "string" && ref ? (await prisma.card.findUnique({ where: { slug: ref.toLowerCase() }, select: { userId: true } }))?.userId ?? null : null;
 
 export const register = async (dto) => {
   if (await userRepository.findByEmail(dto.email)) {
     throw httpError(409, "Este e-mail já tem conta. Entre ou recupere a senha.");
   }
 
-  // Indicação: `ref` é o slug do cartão de onde a pessoa veio (selo "Feito com VorenMe").
-  const ref = typeof dto.ref === "string" && dto.ref ? await prisma.card.findUnique({ where: { slug: dto.ref.toLowerCase() }, select: { userId: true } }) : null;
-
   const verify = newVerifyToken();
   const user = await userRepository.registerUser({
     name: dto.name || null,
     email: dto.email,
     password: await hashPassword(dto.password),
-    referredById: ref?.userId ?? null,
+    referredById: await referrerId(dto.ref),
     origin: dto.origin ?? undefined,
     lastSeenAt: new Date(),
     ...verify.data,
@@ -44,6 +47,33 @@ export const register = async (dto) => {
 
   notify(user, "welcome", { verifyLink: verifyLink(verify.token) }); // sem await: e-mail lento não segura o cadastro
   return session(user);
+};
+
+/** Botão "Continuar com Google" (painel): o front busca o Client ID aqui. null = desligado (sem GOOGLE_CLIENT_ID). */
+export const googleConfig = () => ({ clientId: process.env.GOOGLE_CLIENT_ID || null });
+
+// Cadastro e login com Google na mesma rota: e-mail novo cria a conta (já confirmada), e-mail existente entra nela.
+// Entrar numa conta criada com senha é seguro: o Google só manda e-mail que ele mesmo confirmou (email_verified).
+// A conta nova ganha uma senha aleatória (o banco exige senha); quem quiser uma usa "Esqueci minha senha".
+export const google = async (dto) => {
+  const g = await verifyGoogleToken(dto.credential);
+  const existing = await userRepository.findByEmail(g.email);
+  if (existing) {
+    if (!existing.active) throw httpError(401, "Esta conta está desativada. Fale com o suporte.");
+    const confirm = existing.emailVerifiedAt ? {} : { emailVerifiedAt: new Date(), verifyTokenHash: null, verifyTokenExp: null };
+    return { ...session(await userRepository.updateUser(existing.id, { lastSeenAt: new Date(), ...confirm })), created: false };
+  }
+  const user = await userRepository.registerUser({
+    name: dto.name || g.name,
+    email: g.email,
+    password: await hashPassword(randomBytes(32).toString("hex")),
+    referredById: await referrerId(dto.ref),
+    origin: dto.origin ?? undefined,
+    lastSeenAt: new Date(),
+    emailVerifiedAt: new Date(),
+  });
+  notify(user, "welcomeGoogle", { link: `${front()}/painel` });
+  return { ...session(user), created: true };
 };
 
 export const login = async (dto) => {

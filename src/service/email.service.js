@@ -9,12 +9,25 @@ const billing = () => ({ label: "Abrir assinatura", url: `${front()}/painel/assi
 
 /** Todos os e-mails do produto. Cada um recebe o usuário (e dados extras) e devolve { subject, html, text }. */
 export const templates = {
+  // Cadastro pelo Google: o e-mail já vem confirmado, então não tem link de confirmação.
+  welcomeGoogle: (u, { link }) => ({
+    subject: "Bem-vindo ao VorenMe",
+    ...layout({
+      title: "Bem-vindo ao VorenMe",
+      preview: "Sua conta está pronta. Você tem 30 dias grátis.",
+      lines: [hi(u), "Sua conta está criada e você tem 30 dias grátis para testar tudo, sem cartão de crédito.",
+        "Escolha um modelo, coloque seu WhatsApp, Pix e endereço, e compartilhe o link na bio e nos grupos.",
+        "Você entra sempre pelo botão do Google. Se um dia quiser entrar com senha, use \"Esqueci minha senha\" na tela de entrada."],
+      cta: { label: "Abrir meu painel", url: link },
+      footnote: "Se você não criou esta conta, responda este e-mail.",
+    }),
+  }),
   welcome: (u, { verifyLink }) => ({
     subject: "Confirme seu e-mail e comece no VorenMe",
     ...layout({
       title: "Bem-vindo ao VorenMe",
-      preview: "Confirme seu e-mail para colocar seu cartão no ar. Você tem 3 dias grátis.",
-      lines: [hi(u), "Sua conta está criada e você tem 3 dias grátis para testar tudo, sem cartão de crédito.",
+      preview: "Confirme seu e-mail para colocar seu cartão no ar. Você tem 30 dias grátis.",
+      lines: [hi(u), "Sua conta está criada e você tem 30 dias grátis para testar tudo, sem cartão de crédito.",
         "Confirme que este e-mail é seu para colocar seu cartão no ar. Você pode montar o cartão antes; ele só abre para os clientes depois da confirmação.",
         "Também é por este e-mail que você recupera a senha e recebe os avisos da assinatura."],
       cta: { label: "Confirmar meu e-mail", url: verifyLink },
