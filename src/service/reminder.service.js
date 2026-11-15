@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import { activeUntil, offlineAt } from "../utils/plan.js";
+import { TRIAL_DAYS, activeUntil, offlineAt } from "../utils/plan.js";
 import { notifyOnce } from "./email.service.js";
 import { pruneOld } from "./conecta.service.js";
 
@@ -30,7 +30,7 @@ export const dueReminders = (user, now = new Date()) => {
 export const runReminders = async (now = new Date()) => {
   const users = await prisma.$queryRaw`
     SELECT id, email, name, "createAt", "paidUntil", "asaasSubscriptionId" FROM "User"
-    WHERE active AND greatest("createAt" + interval '3 days', coalesce("paidUntil", 'epoch'))
+    WHERE active AND greatest("createAt" + make_interval(days => ${TRIAL_DAYS}::int), coalesce("paidUntil", 'epoch'))
       BETWEEN ${new Date(now.getTime() - 7 * DAY)} AND ${new Date(now.getTime() + 2 * DAY)}`;
   let sent = 0;
   for (const user of users) {

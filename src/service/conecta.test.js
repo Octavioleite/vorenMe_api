@@ -73,7 +73,7 @@ test("formulário: inválido = 400 com a lista; isca = não grava; cartão inexi
 
 test("cartão com assinatura vencida (modo básico) não recebe contatos", async () => {
   const old = card.user.createAt;
-  card.user.createAt = new Date(Date.now() - 4 * 24 * 3600 * 1000); // trial de 3 dias acabou, ainda no ar
+  card.user.createAt = new Date(Date.now() - 31 * 24 * 3600 * 1000); // trial de 30 dias acabou, ainda no ar
   await assert.rejects(conecta.createLead("dra.ana", { action: "form", name: "Bia", contact: "bia@x.com", consent: true }), { status: 404 });
   card.user.createAt = old;
 });

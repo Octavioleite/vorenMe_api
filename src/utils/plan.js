@@ -1,7 +1,7 @@
-// Plano mensal (R$ 9,99) ou anual (R$ 99,90 = paga 10 meses, usa 12): 3 dias grátis a partir do cadastro, depois vale até `paidUntil`.
+// Plano mensal (R$ 9,99) ou anual (R$ 99,90 = paga 10 meses, usa 12): 30 dias grátis a partir do cadastro, depois vale até `paidUntil`.
 // ponytail: `paidUntil` no User em vez de tabela Subscription; o webhook do gateway só avança essa data.
 // Criar a tabela quando precisar de histórico de cobranças ou mais de um plano.
-export const TRIAL_DAYS = 3;
+export const TRIAL_DAYS = 30;
 export const MAX_CARDS = 3;
 
 const DAY = 24 * 60 * 60 * 1000;

@@ -13,7 +13,7 @@ model User {
   email    String   @unique
   password String
   active   Boolean  @default(true)
-  // Assinatura paga até esta data (trial = createAt + 3 dias). Ver src/utils/plan.js.
+  // Assinatura paga até esta data (trial = createAt + 30 dias). Ver src/utils/plan.js.
   paidUntil DateTime?
   asaasCustomerId     String? @unique
   asaasSubscriptionId String?
