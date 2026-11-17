@@ -7,6 +7,8 @@ test("só grava valores conhecidos", () => {
   assert.deepEqual(normalizeEvent({ kind: "view", source: "instagram" }), { kind: "view", source: "instagram", target: null });
   assert.deepEqual(normalizeEvent({ kind: "click", source: "<script>", target: "pix" }), { kind: "click", source: "outro", target: "pix" });
   assert.deepEqual(normalizeEvent({ kind: "click", target: "drop table" }), { kind: "click", source: "outro", target: "link" });
+  assert.deepEqual(normalizeEvent({ kind: "view", source: "instagram", medium: "social", content: "link_in_bio" }),
+    { kind: "view", source: "instagram", target: null, medium: "social", content: "link_in_bio" });
   assert.equal(normalizeEvent({ kind: "hack" }), null);
   assert.equal(normalizeEvent(null), null);
 });

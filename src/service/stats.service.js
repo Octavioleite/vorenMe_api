@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import { httpError } from "../utils/httpError.js";
 import { CONNECT_ID } from "../dto/card/config.js";
 import { visitorId } from "../utils/conecta.js";
+import { tag } from "../utils/origin.js";
 
 // Valores aceitos: o front manda, mas qualquer um pode chamar a rota pública, então só gravamos o que conhecemos.
 export const TARGETS = ["whatsapp", "email", "site", "instagram", "tiktok", "youtube", "pinterest", "spotify", "x", "website",
@@ -21,6 +22,7 @@ export const normalizeEvent = (body) => {
   const source = SOURCES.includes(body.source) ? body.source : "outro";
   const target = kind === "click" ? (TARGETS.includes(body.target) ? body.target : "link") : kind === "section" ? body.target : null;
   const event = { kind, source, target };
+  for (const k of ["medium", "campaign", "content"]) if (tag(body[k])) event[k] = tag(body[k]);
   // Conecta: qual ação/serviço foi clicado, e quais ações estavam no cartão quando ele abriu.
   if (kind === "click" && connectId(body.action)) event.action = body.action;
   if (kind === "click" && connectId(body.interest)) event.interest = body.interest;

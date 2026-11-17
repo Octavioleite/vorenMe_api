@@ -82,6 +82,9 @@ model Event {
   kind     String   // view | click | section
   target   String?  // whatsapp, instagram, pix, maps... (click) · conecta (section)
   source   String   // instagram, tiktok, qr, whatsapp, google, direto...
+  medium   String?  // utm_medium / utm_campaign / utm_content do link (src/utils/origin.js, tag)
+  campaign String?
+  content  String?
   // Conecta. visitor = hash de IP+navegador+cartão+dia com segredo do servidor: conta a mesma pessoa uma vez
   // por dia sem cookie, e no dia seguinte vira outro valor (não dá para seguir ninguém entre dias).
   visitor  String?
