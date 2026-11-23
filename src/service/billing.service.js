@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import { httpError } from "../utils/httpError.js";
 import { activeUntil, addMonth, isActive, offlineAt, paidUntilFrom } from "../utils/plan.js";
 import { notify, notifyOnce } from "./email.service.js";
+import { sendPurchase } from "./meta.service.js";
 
 // Asaas: https://docs.asaas.com — ASAAS_URL = https://api-sandbox.asaas.com/v3 (teste) ou https://api.asaas.com/v3.
 export const PRICE = 9.99;
@@ -217,6 +218,8 @@ export const handleWebhook = async ({ event, payment }) => {
       create: { userId: user.id, asaasId: payment.id, amount: payment.value ?? 0, method: "asaas", until, prevPaidUntil: user.paidUntil },
       update: {}, // corrida entre os dois: o 2º dá P2002 → 500 → o Asaas reenvia e cai aqui
     });
+    // Purchase só na 1ª vez que o pagamento aparece (CONFIRMED ou RECEIVED): reenvio do Asaas não conta de novo.
+    if (!row) await sendPurchase({ email: user.email, paymentId: payment.id, value: payment.value });
     // Um e-mail por pagamento (o Asaas manda CONFIRMED e depois RECEIVED para o mesmo pagamento).
     await notifyOnce(user, `paid:${payment.id}`, "paymentConfirmed", { until: user.paidUntil && user.paidUntil > until ? user.paidUntil : until, value: payment.value });
     await rewardReferrer(user);
