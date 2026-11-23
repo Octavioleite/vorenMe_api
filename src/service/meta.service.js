@@ -7,6 +7,8 @@ const sha256 = (value) => createHash("sha256").update(String(value).trim().toLow
 export const sendPurchase = async ({ email, paymentId, value }) => {
   const pixelId = process.env.META_PIXEL_ID;
   const token = process.env.META_CAPI_TOKEN;
+  // Só para testar no "Testar eventos" do Gerenciador: não deixe no servidor de produção (o evento some dos relatórios).
+  const testCode = process.env.META_TEST_EVENT_CODE;
   if (!pixelId || !token) return;
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
@@ -14,6 +16,7 @@ export const sendPurchase = async ({ email, paymentId, value }) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         access_token: token,
+        ...(testCode && { test_event_code: testCode }),
         data: [{
           event_name: "Purchase",
           event_time: Math.floor(Date.now() / 1000),
