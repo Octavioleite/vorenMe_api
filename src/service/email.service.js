@@ -29,7 +29,7 @@ export const templates = {
       preview: "Confirme seu e-mail para colocar seu cartão no ar. Você tem 30 dias grátis.",
       lines: [hi(u), "Sua conta está criada e você tem 30 dias grátis para testar tudo, sem cartão de crédito.",
         "Confirme que este e-mail é seu para colocar seu cartão no ar. Você pode montar o cartão antes; ele só abre para os clientes depois da confirmação.",
-        "Também é por este e-mail que você recupera a senha e recebe os avisos da assinatura."],
+        "Também é por este e-mail que você entra na sua conta e recebe os avisos da assinatura."],
       cta: { label: "Confirmar meu e-mail", url: verifyLink },
       footnote: "O link vale por 7 dias. Se você não criou esta conta, pode ignorar este e-mail.",
     }),
@@ -52,6 +52,16 @@ export const templates = {
       lines: [hi(u), "Recebemos um pedido para redefinir a senha da sua conta. O link abaixo vale por 1 hora."],
       cta: { label: "Criar nova senha", url: link },
       footnote: "Se não foi você, pode ignorar este e-mail. Sua senha continua a mesma.",
+    }),
+  }),
+
+  loginLink: (u, { link }) => ({
+    subject: "Seu link para entrar no VorenMe",
+    ...layout({
+      title: "Entre com um clique",
+      lines: [hi(u), "Use o botão abaixo para entrar na sua conta. O link vale por 1 hora e funciona uma vez."],
+      cta: { label: "Entrar no VorenMe", url: link },
+      footnote: "Se não foi você, pode ignorar este e-mail.",
     }),
   }),
 

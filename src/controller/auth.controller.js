@@ -69,7 +69,7 @@ export const deleteMe = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
   try {
-    await authService.forgotPassword(req.body?.email);
+    await authService.forgotPassword(req.body?.email, { login: req.body?.login === true });
   } catch (error) {
     console.error("Error sending reset email:", error); // não muda a resposta: não revela se o e-mail existe
   }

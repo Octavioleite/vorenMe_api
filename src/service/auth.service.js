@@ -38,7 +38,7 @@ export const register = async (dto) => {
   const user = await userRepository.registerUser({
     name: dto.name || null,
     email: dto.email,
-    password: await hashPassword(dto.password),
+    password: await hashPassword(dto.password ?? randomBytes(32).toString("hex")), // sem senha: entra por link no e-mail
     referredById: await referrerId(dto.ref),
     origin: dto.origin ?? undefined,
     lastSeenAt: new Date(),
@@ -144,25 +144,32 @@ const sha = (t) => createHash("sha256").update(t).digest("hex");
 const RESET_TTL = 60 * 60 * 1000; // 1h
 
 // Sempre responde igual (existindo ou não o e-mail): não revela quem tem conta.
-export const forgotPassword = async (email) => {
+// login: true manda um link de acesso (/painel?entrar=) em vez do de redefinir; os dois usam o mesmo token de 1h.
+export const forgotPassword = async (email, { login = false } = {}) => {
   const user = await userRepository.findByEmail(String(email ?? "").trim().toLowerCase());
   if (!user || !user.active) return;
 
   const token = randomBytes(32).toString("hex");
   await userRepository.updateUser(user.id, { resetTokenHash: sha(token), resetTokenExp: new Date(Date.now() + RESET_TTL) });
 
-  const link = `${process.env.FRONT_URL || "http://localhost:5173"}/painel?redefinir=${token}`;
+  const link = `${front()}/painel?${login ? "entrar" : "redefinir"}=${token}`;
   // Sem await: esperar o SMTP deixaria a resposta mais lenta só para e-mails que existem.
-  sendMail({ to: user.email, ...templates.passwordReset(user, { link }) }).catch((e) => console.error("Error sending reset email:", e));
+  sendMail({ to: user.email, ...templates[login ? "loginLink" : "passwordReset"](user, { link }) }).catch((e) => console.error("Error sending reset email:", e));
 };
 
+// Sem password: é o link de acesso. Só consome o token e entra (senha e outras sessões ficam como estão).
 export const resetPassword = async (token, password) => {
-  if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+  if (password !== undefined && (typeof password !== "string" || password.length < 8 || password.length > 128)) {
     throw httpError(400, "A nova senha precisa ter de 8 a 128 caracteres.");
   }
   const user = typeof token === "string" && token ? await prisma.user.findUnique({ where: { resetTokenHash: sha(token) } }) : null;
   if (!user || !user.active || !user.resetTokenExp || user.resetTokenExp < new Date()) {
     throw httpError(400, "Link inválido ou expirado. Peça um novo.");
+  }
+  if (password === undefined) {
+    // Abrir o link prova que o e-mail é da pessoa: confirma também, se ainda não estava.
+    const confirm = user.emailVerifiedAt ? {} : { emailVerifiedAt: new Date(), verifyTokenHash: null, verifyTokenExp: null };
+    return session(await userRepository.updateUser(user.id, { resetTokenHash: null, resetTokenExp: null, lastSeenAt: new Date(), ...confirm }));
   }
   const updated = await userRepository.updateUser(user.id, { password: await hashPassword(password), resetTokenHash: null, resetTokenExp: null, tokenVersion: { increment: 1 } });
   notify(updated, "passwordChanged");

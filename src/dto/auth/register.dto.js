@@ -18,7 +18,8 @@ export default class RegisterUserDto {
       errors.push("Informe um e-mail válido.");
     }
 
-    if (typeof this.password !== "string" || this.password.length < 8) {
+    // Senha opcional: o cadastro rápido (landing) cria a conta só com o e-mail; o login depois é por link (/auth/forgot-password com login: true).
+    if (this.password !== undefined && (typeof this.password !== "string" || this.password.length < 8)) {
       errors.push("A senha precisa ter pelo menos 8 caracteres.");
     }
 
